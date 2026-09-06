@@ -119,17 +119,41 @@ export function PatternCanvas({
           ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
           ctx.fill();
 
-          // Subtle glossy top specular highlight
-          const grad = ctx.createLinearGradient(px, py, px, py + cellH);
-          grad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-          grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)');
-          grad.addColorStop(0.8, 'rgba(0, 0, 0, 0.0)');
-          grad.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
+          // Physical finish shading
+          if (bead.finish === 'Matte') {
+            // Soft velvet diffuse shading (low contrast, no glossy specular)
+            const matteGrad = ctx.createLinearGradient(px, py, px, py + cellH);
+            matteGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+            matteGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.0)');
+            matteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+            ctx.fillStyle = matteGrad;
+            ctx.beginPath();
+            ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
+            ctx.fill();
+          } else if (bead.finish === 'Pearl') {
+            // Pearl iridescent sheen
+            const pearlGrad = ctx.createLinearGradient(px, py, px + cellW, py + cellH);
+            pearlGrad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+            pearlGrad.addColorStop(0.35, 'rgba(220, 230, 255, 0.2)');
+            pearlGrad.addColorStop(0.7, 'rgba(255, 240, 245, 0.15)');
+            pearlGrad.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
+            ctx.fillStyle = pearlGrad;
+            ctx.beginPath();
+            ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
+            ctx.fill();
+          } else {
+            // Opaque Classic Glossy Highlight
+            const grad = ctx.createLinearGradient(px, py, px, py + cellH);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+            grad.addColorStop(0.25, 'rgba(255, 255, 255, 0.12)');
+            grad.addColorStop(0.75, 'rgba(0, 0, 0, 0.0)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
 
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
-          ctx.fill();
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
+            ctx.fill();
+          }
 
           // Center 4mm bead hole (vertical thread passes through)
           const holeW = cellW * 0.38;
@@ -394,8 +418,18 @@ export function PatternCanvas({
             <span>
               <strong>Thread #{hoverInfo.col}</strong> | <strong>Bead #{hoverInfo.rowFromBottom}</strong> (from bottom):
             </span>
-            <span style={{ color: '#F8FAFC' }}>
-              {hoverInfo.bead.name} ({hoverInfo.bead.id})
+            <span style={{ color: '#F8FAFC', fontWeight: 500 }}>
+              {hoverInfo.bead.name}
+            </span>
+            <span style={{
+              fontSize: '0.66rem',
+              color: hoverInfo.bead.finish === 'Matte' ? '#FCD34D' : '#93C5FD',
+              background: hoverInfo.bead.finish === 'Matte' ? 'rgba(217, 119, 6, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+              padding: '0.1rem 0.35rem',
+              borderRadius: '3px',
+              fontWeight: 600
+            }}>
+              {hoverInfo.bead.finish || 'Opaque'} &bull; {hoverInfo.bead.code || hoverInfo.bead.id}
             </span>
           </div>
         )}

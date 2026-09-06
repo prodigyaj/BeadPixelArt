@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Sparkles, Filter, Check, ArrowRight, ShieldCheck, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { Palette, Sparkles, Filter, Check, ArrowRight, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, ExternalLink } from 'lucide-react';
 import { calculateColorStats } from '../core/threading.js';
 
 export function ColorBreakdown({
@@ -292,6 +292,22 @@ export function ColorBreakdown({
         </div>
       </div>
 
+      {/* Grounded Reality Guarantee Banner */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.45rem',
+        background: 'rgba(16, 185, 129, 0.08)',
+        border: '1px solid rgba(16, 185, 129, 0.25)',
+        borderRadius: 'var(--radius-md)',
+        padding: '0.5rem 0.65rem',
+        fontSize: '0.72rem',
+        color: '#6EE7B7'
+      }}>
+        <ShieldCheck size={14} color="#10B981" style={{ flexShrink: 0 }} />
+        <span><strong>100% Real Commercial Stock:</strong> All colors match standard The Beadery / BeadTin / Amazon 1,000-piece packs.</span>
+      </div>
+
       {/* Interactive Color Inventory Table */}
       <div className="control-label">
         <span>Final Shopping List (Click to Isolate):</span>
@@ -309,15 +325,20 @@ export function ColorBreakdown({
         <table className="color-table">
           <thead>
             <tr>
-              <th>Color</th>
+              <th>Bead Color</th>
+              <th>Finish</th>
               <th>Count</th>
-              <th>%</th>
               <th>Bags</th>
+              <th style={{ textAlign: 'center' }}>Buy</th>
             </tr>
           </thead>
           <tbody>
             {colorStats.map((item) => {
               const isIsolated = isolatedColorId === item.id;
+              const searchUrl = `https://www.amazon.com/s?k=${encodeURIComponent(
+                item.buyQuery || `pony beads 6x9mm ${item.name} 1000`
+              )}`;
+
               return (
                 <tr
                   key={item.id}
@@ -334,20 +355,58 @@ export function ColorBreakdown({
                         borderRadius: '3px',
                         backgroundColor: item.hex,
                         border: '1px solid rgba(255,255,255,0.25)',
+                        boxShadow: item.finish === 'Matte' ? 'none' : 'inset 1px 1px 2px rgba(255,255,255,0.4)',
                         flexShrink: 0
                       }}
                     />
                     <div>
-                      <div style={{ fontWeight: 500, color: '#F8FAFC' }}>{item.name}</div>
-                      <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{item.id}</div>
+                      <div style={{ fontWeight: 500, color: '#F8FAFC', fontSize: '0.78rem' }}>{item.name}</div>
+                      <div style={{ fontSize: '0.66rem', color: '#94A3B8', fontFamily: 'var(--font-mono)' }}>
+                        {item.code || item.id} &bull; {item.percentage}%
+                      </div>
                     </div>
                   </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  <td>
+                    <span style={{
+                      fontSize: '0.64rem',
+                      fontWeight: 600,
+                      padding: '0.12rem 0.35rem',
+                      borderRadius: '4px',
+                      background: item.finish === 'Matte' ? 'rgba(217, 119, 6, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                      color: item.finish === 'Matte' ? '#FCD34D' : '#93C5FD',
+                      border: `1px solid ${item.finish === 'Matte' ? 'rgba(217, 119, 6, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`
+                    }}>
+                      {item.finish || 'Opaque'}
+                    </span>
+                  </td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: '0.78rem' }}>
                     {item.count.toLocaleString()}
                   </td>
-                  <td style={{ color: '#94A3B8' }}>{item.percentage}%</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#A5B4FC' }}>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#A5B4FC', fontWeight: 600 }}>
                     {item.bagsNeeded}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <a
+                      href={searchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm"
+                      onClick={(e) => e.stopPropagation()}
+                      title={`Search Amazon / store for 1,000-pack of ${item.name}`}
+                      style={{
+                        padding: '0.2rem 0.4rem',
+                        fontSize: '0.68rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        color: '#38BDF8',
+                        borderColor: 'rgba(56, 189, 248, 0.3)',
+                        background: 'rgba(56, 189, 248, 0.08)'
+                      }}
+                    >
+                      <ExternalLink size={10} />
+                      <span>Find</span>
+                    </a>
                   </td>
                 </tr>
               );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Download, FileText, Image as ImageIcon, Eye, Layers, Palette, Wifi, Heart } from 'lucide-react';
+import { Download, FileText, Image as ImageIcon, Eye, Layers, Palette, Wifi, Heart } from 'lucide-react';
 
 export function Header({
   activeBeadPreset,
@@ -31,10 +31,6 @@ export function Header({
           </div>
           <div className="brand-subtitle">
             <span>Thread Tapestry &amp; Wall Hanging Engine</span>
-            <span className="badge-default">
-              <Sparkles size={11} />
-              Default: {activeBeadPreset.widthMm}×{activeBeadPreset.heightMm}mm Pony Beads
-            </span>
           </div>
         </div>
       </div>

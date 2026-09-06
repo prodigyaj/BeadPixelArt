@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wifi, X, Copy, Check, Lock, Globe, ShieldCheck, Heart } from 'lucide-react';
+import { Wifi, X, Copy, Check, Lock, Globe, ShieldCheck, Heart, Share2, Mail } from 'lucide-react';
 
 export function NetworkAccessModal({
   isOpen,
@@ -179,6 +179,40 @@ export function NetworkAccessModal({
             {copied ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
             <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
+        </div>
+
+        {/* Quick Send Options for Clickable Links */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.45rem', marginBottom: '0.75rem' }}>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: 'BeadPixel Art Studio',
+                  text: 'Open BeadPixel Art Studio on this Wi-Fi:\n',
+                  url: currentUrl
+                }).catch(() => {});
+              } else {
+                handleCopy(currentUrl);
+              }
+            }}
+            title="Open Windows Share or Copy"
+            style={{ justifyContent: 'center', fontSize: '0.75rem' }}
+          >
+            <Share2 size={13} color="#60A5FA" />
+            <span>Share Link</span>
+          </button>
+
+          <a
+            href={`mailto:?subject=${encodeURIComponent('BeadPixel Art Studio Link')}&body=${encodeURIComponent('Open BeadPixel Art Studio on this Wi-Fi:\n\n' + currentUrl + '\n\n(Tip: If asked, tap Advanced -> Proceed to open the local HTTPS certificate)')}`}
+            className="btn btn-sm"
+            style={{ justifyContent: 'center', fontSize: '0.75rem', textDecoration: 'none' }}
+            title="Send an email to yourself to open on your phone"
+          >
+            <Mail size={13} color="#F59E0B" />
+            <span>Email to Phone</span>
+          </a>
         </div>
 
         {/* HTTPS Notice */}

@@ -1,0 +1,25 @@
+// Official Perler 5mm Bead Palette
+export const PERLER_PALETTE = [
+  { id: 'P01', name: 'White', hex: '#FFFFFF', group: 'Neutrals' },
+  { id: 'P18', name: 'Black', hex: '#161616', group: 'Neutrals' },
+  { id: 'P12', name: 'Grey', hex: '#878787', group: 'Neutrals' },
+  { id: 'P92', name: 'Dark Grey', hex: '#48494B', group: 'Neutrals' },
+  { id: 'P05', name: 'Red', hex: '#B81E24', group: 'Reds & Pinks' },
+  { id: 'P04', name: 'Orange', hex: '#E75926', group: 'Oranges & Yellows' },
+  { id: 'P03', name: 'Yellow', hex: '#F3E500', group: 'Oranges & Yellows' },
+  { id: 'P10', name: 'Dark Green', hex: '#1B6535', group: 'Greens' },
+  { id: 'P11', name: 'Light Green', hex: '#58B947', group: 'Greens' },
+  { id: 'P08', name: 'Dark Blue', hex: '#1D3B8B', group: 'Blues' },
+  { id: 'P09', name: 'Light Blue', hex: '#3E94D1', group: 'Blues' },
+  { id: 'P07', name: 'Purple', hex: '#56256D', group: 'Purples' },
+  { id: 'P06', name: 'Magenta', hex: '#A3195B', group: 'Purples' },
+  { id: 'P20', name: 'Rust', hex: '#8A3324', group: 'Browns' },
+  { id: 'P21', name: 'Light Brown', hex: '#A56A44', group: 'Browns' },
+  { id: 'P17', name: 'Brown', hex: '#533724', group: 'Browns' },
+  { id: 'P35', name: 'Tan', hex: '#D2B48C', group: 'Neutrals' },
+  { id: 'P79', name: 'Sand', hex: '#E8D3A2', group: 'Neutrals' },
+  { id: 'P83', name: 'Peach', hex: '#F7BC9B', group: 'Reds & Pinks' },
+  { id: 'P88', name: 'Pastel Lavender', hex: '#BA9CC4', group: 'Purples' },
+  { id: 'P90', name: 'Plum', hex: '#4B283E', group: 'Purples' },
+  { id: 'P62', name: 'Turquoise', hex: '#00A19B', group: 'Blues' }
+];

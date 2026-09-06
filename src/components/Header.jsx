@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Download, FileText, Image as ImageIcon, Eye, Layers, Palette, Wifi } from 'lucide-react';
+import { Sparkles, Download, FileText, Image as ImageIcon, Eye, Layers, Palette, Wifi, Heart } from 'lucide-react';
 
 export function Header({
   activeBeadPreset,
@@ -22,9 +22,15 @@ export function Header({
           <Layers size={24} />
         </div>
         <div>
-          <h1 className="brand-title">BeadPixel Art Studio</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <h1 className="brand-title">BeadPixel Art Studio</h1>
+            <span className="creator-badge" title="Created by Ajay and Moss">
+              <Heart size={11} fill="#EC4899" color="#EC4899" />
+              <span>Created by Ajay &amp; Moss</span>
+            </span>
+          </div>
           <div className="brand-subtitle">
-            <span>Thread Tapestry & Wall Hanging Engine</span>
+            <span>Thread Tapestry &amp; Wall Hanging Engine</span>
             <span className="badge-default">
               <Sparkles size={11} />
               Default: {activeBeadPreset.widthMm}×{activeBeadPreset.heightMm}mm Pony Beads

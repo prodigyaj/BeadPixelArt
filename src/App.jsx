@@ -280,7 +280,10 @@ export default function App() {
     // Header label
     ctx.fillStyle = '#F8FAFC';
     ctx.font = 'bold 18px Outfit, sans-serif';
-    ctx.fillText(`BeadPixel Art Pattern (${columns} Threads × ${rows} Beads)`, pad, 36);
+    ctx.fillText(`BeadPixel Art Pattern (${columns} Threads × ${rows} Beads)`, pad, 28);
+    ctx.fillStyle = '#F472B6';
+    ctx.font = '500 12px Outfit, sans-serif';
+    ctx.fillText(`Created with ❤️ by Ajay & Moss • BeadPixel Art Studio`, pad, 46);
 
     // Trigger download
     const link = document.createElement('a');
@@ -441,6 +444,24 @@ export default function App() {
         </div>
       </main>
 
+      {/* App Footer: Credits & System Info */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-creators">
+            <span>Created with <span style={{ color: '#EC4899' }}>❤️</span> by <strong>Ajay &amp; Moss</strong></span>
+            <span className="footer-dot">•</span>
+            <span>BeadPixel Art Studio</span>
+            <span className="footer-dot">•</span>
+            <span className="badge-craft">Pony Bead Tapestry Generator</span>
+          </div>
+          <div className="footer-meta">
+            <span>Local DNS: <code className="footer-code">https://beadstudio.local:5173/</code> &bull; <code className="footer-code">https://aj.local:5173/</code></span>
+            <span className="footer-dot">•</span>
+            <span>Zero-Distortion 1.5:1 Aspect Ratio</span>
+          </div>
+        </div>
+      </footer>
+
       {/* Allowed Bead Inventory & Whitelist Modal */}
       <PaletteManagerModal
         isOpen={isPaletteManagerOpen}
@@ -470,11 +491,13 @@ export default function App() {
         }}
       />
 
-      {/* Network / Mobile Wi-Fi Access Modal */}
+      {/* Network / Mobile Wi-Fi Access Modal (HTTPS + Local DNS) */}
       <NetworkAccessModal
         isOpen={isNetworkModalOpen}
         onClose={() => setIsNetworkModalOpen(false)}
-        networkUrl="http://10.0.0.22:5173/"
+        dnsUrl="https://beadstudio.local:5173/"
+        hostUrl="https://aj.local:5173/"
+        ipUrl="https://10.0.0.22:5173/"
       />
 
       {/* Wall Hanging Mockup Modal */}

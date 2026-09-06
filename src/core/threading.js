@@ -81,6 +81,7 @@ export function generateWordChart(matrix, beadSpecs) {
 
   lines.push(`=======================================================`);
   lines.push(`BEAD PIXEL ART - THREAD-BY-THREAD STRINGING GUIDE`);
+  lines.push(`Created with ❤️ by Ajay & Moss`);
   lines.push(`=======================================================`);
   lines.push(`Bead Type: ${beadSpecs.name}`);
   lines.push(`Matrix: ${width} Columns (Threads) × ${height} Rows (Beads per thread)`);

@@ -215,23 +215,37 @@ export function NetworkAccessModal({
           </a>
         </div>
 
-        {/* HTTPS Notice */}
+        {/* HTTPS Notice & Phone Trust Option */}
         <div style={{
           background: 'rgba(59, 130, 246, 0.08)',
           border: '1px solid rgba(59, 130, 246, 0.25)',
           borderRadius: 'var(--radius-md)',
-          padding: '0.6rem 0.75rem',
+          padding: '0.65rem 0.75rem',
           fontSize: '0.72rem',
           color: '#93C5FD',
           textAlign: 'left',
           lineHeight: '1.45',
           marginBottom: '0.75rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, color: '#BFDBFE', marginBottom: '0.2rem' }}>
-            <ShieldCheck size={14} color="#60A5FA" />
-            <span>HTTPS Security Note for Mobile Browsers</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, color: '#BFDBFE' }}>
+              <ShieldCheck size={14} color="#60A5FA" />
+              <span>Why phones show "Not Secure" initially:</span>
+            </div>
           </div>
-          Because this is a local development SSL certificate, Safari/Chrome on your phone will display an initial security note. Simply tap <strong>Advanced &rarr; Proceed / Accept</strong> once to view the app.
+          Your PC trusts its own development CA, but your phone hasn't been introduced to it yet!
+          <div style={{ marginTop: '0.4rem', color: '#E2E8F0' }}>
+            &bull; <strong>Quickest:</strong> Just tap <strong>Advanced &rarr; Proceed / Accept</strong> once on your phone.<br/>
+            &bull; <strong>Or get the Green Lock on your phone:</strong>{' '}
+            <a
+              href="/rootCA.pem"
+              download="rootCA.pem"
+              style={{ color: '#38BDF8', fontWeight: 600, textDecoration: 'underline' }}
+            >
+              Download Local Root CA (.pem)
+            </a>
+            {' '}(Install in iPhone Settings &rarr; Profile, then enable in Certificate Trust Settings).
+          </div>
         </div>
 
         {/* Creator Attribution */}

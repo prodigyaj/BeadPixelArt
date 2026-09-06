@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import basicSsl from '@vitejs/plugin-basic-ssl';
 import mdns from 'multicast-dns';
 import os from 'os';
+import fs from 'fs';
+import path from 'path';
 
 // Detect active local IPv4 address
 function getLocalIp() {
@@ -81,16 +82,28 @@ function localMdnsPlugin() {
   };
 }
 
+const certDir = path.resolve(os.homedir(), '.vite-plugin-mkcert');
+const certFile = path.join(certDir, 'cert.pem');
+const keyFile = path.join(certDir, 'key.pem');
+
+const httpsConfig =
+  fs.existsSync(certFile) && fs.existsSync(keyFile)
+    ? {
+        cert: fs.readFileSync(certFile),
+        key: fs.readFileSync(keyFile),
+      }
+    : true;
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl(),
     localMdnsPlugin(),
   ],
   server: {
     host: true, // Listen on all local interfaces (0.0.0.0)
     port: 5173,
     allowedHosts: true, // Accept beadstudio.local, aj.local, IP, and any custom local host
+    https: httpsConfig,
   },
 });

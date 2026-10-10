@@ -13,7 +13,8 @@ import { NetworkAccessModal } from './components/NetworkAccessModal.jsx';
 import { ProfileModal } from './components/ProfileModal.jsx';
 import { SimpleSetup } from './components/SimpleSetup.jsx';
 import { ShoppingList } from './components/ShoppingList.jsx';
-import { loadSession, storeSession, saveProject, newProjectId } from './core/profileApi.js';
+import { MyBeadsModal } from './components/MyBeadsModal.jsx';
+import { loadSession, storeSession, saveProject, newProjectId, getProfile, saveInventory } from './core/profileApi.js';
 
 import { BEAD_PRESETS } from './core/beadSpecs.js';
 import { PONY_BEAD_PALETTE } from './palettes/ponyBeads.js';
@@ -437,6 +438,39 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [progressVersion]);
 
+  // Owned bead colors ("My Beads" / inventory): saved to the signed-in profile so every device shares it
+  const [isMyBeadsOpen, setIsMyBeadsOpen] = useState(false);
+  const [inventoryVersion, setInventoryVersion] = useState(0); // bumped on user edits; drives saving
+
+  const handleChangeOwnedIds = (ids) => {
+    setEnabledColorIds(ids);
+    setInventoryVersion((v) => v + 1);
+  };
+
+  useEffect(() => {
+    if (inventoryVersion === 0 || !currentProfile) return;
+    const timer = setTimeout(() => {
+      saveInventory(currentProfile.id, enabledColorIds).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [inventoryVersion]);
+
+  // Load the profile's saved bead colors when someone signs in (or the page reloads signed in)
+  useEffect(() => {
+    if (!currentProfile) return;
+    let isCancelled = false;
+    getProfile(currentProfile.id)
+      .then((profile) => {
+        if (isCancelled || !Array.isArray(profile.inventory)) return;
+        const paletteIds = new Set(basePalette.map((c) => c.id));
+        setEnabledColorIds(profile.inventory.filter((id) => paletteIds.has(id)));
+      })
+      .catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentProfile?.id]);
+
   const handleLoadProject = (project) => {
     const sample = project.image?.sampleId && SAMPLE_IMAGES.find((s) => s.id === project.image.sampleId);
     const src = sample ? sample.src : project.image?.src || SAMPLE_IMAGES[0].src;
@@ -648,6 +682,7 @@ export default function App() {
               activeSampleId={activeSampleId}
               onSelectSample={handleSelectSample}
               onUploadCustom={handleUploadCustom}
+              onOpenMyBeads={() => setIsMyBeadsOpen(true)}
               isExactMatrixMode={isExactMatrixMode}
               columns={columns}
               rows={rows}
@@ -741,7 +776,7 @@ export default function App() {
         onClose={() => setIsPaletteManagerOpen(false)}
         allColors={basePalette}
         enabledColorIds={enabledColorIds}
-        onUpdateEnabledColorIds={setEnabledColorIds}
+        onUpdateEnabledColorIds={handleChangeOwnedIds}
         currentArtColorIds={currentArtColorIds}
       />
 
@@ -772,6 +807,22 @@ export default function App() {
         hostUrl="https://aj.local:5173/"
         ipUrl={`https://${__LAN_IP__}:5173/`}
       />
+
+      {/* What can I make with my beads? */}
+      {isMyBeadsOpen && (
+        <MyBeadsModal
+          onClose={() => setIsMyBeadsOpen(false)}
+          catalog={basePalette}
+          ownedIds={enabledColorIds}
+          onChangeOwnedIds={handleChangeOwnedIds}
+          samples={SAMPLE_IMAGES.filter((sample) => sample.design)}
+          activeSampleId={activeSampleId}
+          onPickDesign={(sample) => {
+            handleSelectSample(sample);
+            setIsMyBeadsOpen(false);
+          }}
+        />
+      )}
 
       {/* Profiles & Saved Projects */}
       {(isProfileModalOpen || !session) && (

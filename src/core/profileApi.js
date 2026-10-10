@@ -57,3 +57,8 @@ export function storeSession(session) {
 }
 
 export const loadLastProfileId = () => localStorage.getItem(LAST_PROFILE_KEY);
+
+export const getProfile = (profileId) => request('GET', `/api/profiles/${profileId}`);
+
+export const saveInventory = (profileId, inventory) =>
+  request('PUT', `/api/profiles/${profileId}/inventory`, { inventory });

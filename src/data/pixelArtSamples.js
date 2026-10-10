@@ -237,8 +237,9 @@ const DESIGNS = [
 
 const hexById = new Map(PONY_BEAD_PALETTE.map((c) => [c.id, c.hex]));
 
-// Builds an SVG with one rect per horizontal run of same-colored pixels
-function gridToSvg(rows, colors) {
+// Builds an SVG with one rect per horizontal run of same-colored pixels.
+// hexFor maps a color id to a hex (lets suggestions preview a design in substitute colors).
+function gridToSvg(rows, colors, hexFor = (id) => hexById.get(id)) {
   const width = rows[0].length;
   const height = rows.length;
   const rects = [];
@@ -248,7 +249,7 @@ function gridToSvg(rows, colors) {
       const ch = row[x];
       let end = x + 1;
       while (end < width && row[end] === ch) end++;
-      rects.push(`<rect x="${x}" y="${y}" width="${end - x}" height="1" fill="${hexById.get(colors[ch])}"/>`);
+      rects.push(`<rect x="${x}" y="${y}" width="${end - x}" height="1" fill="${hexFor(colors[ch])}"/>`);
       x = end;
     }
   });
@@ -258,6 +259,9 @@ function gridToSvg(rows, colors) {
     `</svg>`
   );
 }
+
+// Square-pixel preview of a design, optionally recolored: hexFor(colorId) => hex
+export const renderDesignThumb = (design, hexFor) => toDataUri(gridToSvg(design.grid, design.colors, hexFor));
 
 const toDataUri = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
@@ -275,6 +279,7 @@ export const PIXEL_ART_SAMPLES = DESIGNS.map(({ id, name, category = 'Everyday',
     thumbSrc: toDataUri(gridToSvg(grid, colors)), // square-pixel preview for the gallery
     isExactMatrix: true,
     isSimple: true,
-    category
+    category,
+    design: { grid, colors } // source grid + color ids, used for inventory suggestions
   };
 });

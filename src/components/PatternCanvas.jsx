@@ -160,11 +160,15 @@ export function PatternCanvas({
     const cWidth = container.clientWidth;
     const cHeight = container.clientHeight;
 
-    // Resizing a canvas reallocates its backing store, so only do it when the size changes
-    if (canvas.width !== cWidth) canvas.width = cWidth;
-    if (canvas.height !== cHeight) canvas.height = cHeight;
+    // Back the canvas with device pixels so beads stay sharp on Retina screens (iPad, Mac).
+    // Resizing reallocates the backing store, so only do it when the size changes.
+    const dpr = window.devicePixelRatio || 1;
+    const pixelW = Math.round(cWidth * dpr);
+    const pixelH = Math.round(cHeight * dpr);
+    if (canvas.width !== pixelW) canvas.width = pixelW;
+    if (canvas.height !== pixelH) canvas.height = pixelH;
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cWidth, cHeight);
 
     ctx.save();
@@ -207,7 +211,7 @@ export function PatternCanvas({
 
     // Each distinct bead color is rendered once into a sprite at the current on-screen
     // resolution, then stamped per cell, instead of rebuilding paths and gradients per bead
-    const spriteScale = Math.min(zoom, 12);
+    const spriteScale = Math.min(zoom * dpr, 24);
     const spriteKey = `${cellW}|${cellH}|${spriteScale}`;
     if (spriteCacheRef.current.key !== spriteKey) {
       spriteCacheRef.current = { key: spriteKey, sprites: new Map() };

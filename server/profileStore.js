@@ -61,6 +61,23 @@ function createStore(dataDir) {
       return profile;
     },
 
+    // Bead colors the user owns (palette color ids), shared across all their devices
+    async updateInventory(profileId, inventory) {
+      if (!Array.isArray(inventory) || inventory.some((id) => typeof id !== 'string' || id.length > 40)) {
+        throw new HttpError(400, 'Inventory must be a list of color ids');
+      }
+      const profiles = await readJson(profilesFile, []);
+      const index = profiles.findIndex((p) => p.id === profileId);
+      if (index === -1) throw new HttpError(404, 'Profile not found');
+      profiles[index] = { ...profiles[index], inventory: [...new Set(inventory)].slice(0, 500) };
+      await writeJson(profilesFile, profiles);
+      return profiles[index];
+    },
+
+    async getProfile(profileId) {
+      return getProfile(profileId);
+    },
+
     async listProjects(profileId) {
       await getProfile(profileId);
       let files = [];
@@ -181,6 +198,10 @@ function createApiMiddleware(store) {
           return sendJson(res, 200, await store.listProfiles());
         case 'POST profiles':
           return sendJson(res, 200, await store.createProfile((await readBody(req)).name));
+        case 'GET profiles/:p':
+          return sendJson(res, 200, await store.getProfile(profileId));
+        case 'PUT profiles/:p/inventory':
+          return sendJson(res, 200, await store.updateInventory(profileId, (await readBody(req)).inventory));
         case 'GET profiles/:p/projects':
           return sendJson(res, 200, await store.listProjects(profileId));
         case 'GET profiles/:p/projects/:j':

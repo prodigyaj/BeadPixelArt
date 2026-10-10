@@ -144,12 +144,21 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
+  white-space: nowrap;
 }
 
-.btn:hover {
-  background: var(--bg-card-hover);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Hover effects only where a real pointer can hover (they stick after taps on touch screens) */
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
 }
 
 .btn-primary {
@@ -159,9 +168,11 @@ body {
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-.btn-primary:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 6px 16px var(--accent-glow);
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 16px var(--accent-glow);
+  }
 }
 
 .btn-success {
@@ -351,9 +362,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
   object-fit: cover;
 }
 
-.sample-card:hover {
-  border-color: var(--accent-primary);
-  transform: scale(1.04);
+@media (hover: hover) {
+  .sample-card:hover {
+    border-color: var(--accent-primary);
+    transform: scale(1.04);
+  }
 }
 
 .sample-card.active {
@@ -891,4 +904,196 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .step-card.done .step-count,
 .step-card.done .step-range {
   text-decoration: line-through;
+}
+
+/* ---------- Tablets & touch screens (iPad Air 13": 1024×1366 portrait, 1366×1024 landscape) ---------- */
+
+/* Header wraps its buttons onto a second row instead of squeezing their labels */
+@media (max-width: 1280px) {
+  .app-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+}
+
+.tip-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  /* Rapid taps (e.g. Bead Done) must not trigger double-tap zoom; no long-press text selection */
+  button,
+  .btn,
+  .sample-card,
+  .step-card {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Finger-sized tap targets (Apple recommends at least 44pt) */
+  .btn {
+    min-height: 44px;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+  }
+
+  .step-card {
+    min-height: 52px;
+  }
+
+  .btn:active:not(:disabled),
+  .sample-card:active,
+  .step-card:active {
+    transform: scale(0.97);
+  }
+
+  /* Don't pin the header while scrolling: the threading controls need the space */
+  .app-header {
+    position: static;
+  }
+
+  /* Avoid Safari zooming the page when focusing a text field */
+  select,
+  input[type="text"],
+  input[type="number"] {
+    font-size: 16px;
+  }
+
+  .tip-touch {
+    display: block;
+  }
+
+  .tip-keyboard {
+    display: none;
+  }
+}
+
+/* Landscape tablets: shorter pattern so Bead Done stays on screen without scrolling */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 1100px) {
+  .canvas-wrapper {
+    min-height: 470px;
+  }
+}
+
+/* "What can I make with my beads?" */
+.bead-color-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.4rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.15rem;
+}
+
+.bead-color-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.5);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Swatches stay full color so beads are easy to recognize; selection shows via outline + check */
+.bead-color-option.owned .bead-color-dot {
+  border-color: #FFFFFF;
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+.bead-color-option.owned {
+  opacity: 1;
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.15);
+  color: #F8FAFC;
+}
+
+.bead-color-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+}
+
+.bead-color-name {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.suggestion-thumb {
+  image-rendering: pixelated;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  flex-shrink: 0;
+}
+
+.suggestion-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+}
+
+@media (pointer: coarse) {
+  .bead-color-option {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 64px;
+  }
+}
+
+/* Simple-view size picker */
+.size-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.size-option {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+.size-option-sub {
+  font-size: 0.66rem;
+  opacity: 0.75;
+  font-weight: 400;
 }

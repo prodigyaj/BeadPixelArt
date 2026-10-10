@@ -1,12 +1,15 @@
 import React, { useRef } from 'react';
-import { Image as ImageIcon, UploadCloud, Ruler } from 'lucide-react';
+import { Image as ImageIcon, UploadCloud, Ruler, Sparkles } from 'lucide-react';
 import { SAMPLE_IMAGES } from '../data/sampleImages.js';
 import { calculatePhysicalSpecs } from '../core/beadSpecs.js';
 
+// Pictures size by thread count; pixel designs by enlarging each pixel into a block of beads
 const SIZE_OPTIONS = [
-  { label: 'Small', columns: 30, pixelScale: 1 },
-  { label: 'Medium', columns: 45, pixelScale: 2 },
-  { label: 'Large', columns: 65, pixelScale: 3 }
+  { label: 'Mini', columns: 20, pixelScale: 1 },
+  { label: 'Small', columns: 30, pixelScale: 2 },
+  { label: 'Medium', columns: 45, pixelScale: 3 },
+  { label: 'Large', columns: 65, pixelScale: 4 },
+  { label: 'Extra Large', columns: 90, pixelScale: 5 }
 ];
 
 const CATEGORY_LABELS = { Everyday: 'Everyday', Halloween: '🎃 Halloween Specials' };
@@ -16,6 +19,7 @@ export function SimpleSetup({
   activeSampleId,
   onSelectSample,
   onUploadCustom,
+  onOpenMyBeads,
   isExactMatrixMode,
   columns,
   rows,
@@ -73,6 +77,10 @@ export function SimpleSetup({
           {activeSample ? activeSample.name : 'Your picture'} • {columns} × {rows} beads
         </span>
 
+        <button type="button" className="btn btn-primary" style={{ justifyContent: 'center' }} onClick={onOpenMyBeads}>
+          <Sparkles size={15} />
+          <span>What Can I Make With My Beads?</span>
+        </button>
         <button type="button" className="btn" style={{ justifyContent: 'center' }} onClick={() => fileInputRef.current?.click()}>
           <UploadCloud size={15} />
           <span>Use My Own Picture</span>
@@ -88,21 +96,22 @@ export function SimpleSetup({
           </h2>
         </div>
 
-        {/* Pixel designs grow by turning each pixel into a block of beads; pictures by adding threads */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
+        <div className="size-options">
           {SIZE_OPTIONS.map((opt) => {
             const isActive = isExactMatrixMode ? pixelScale === opt.pixelScale : columns === opt.columns;
+            const optionColumns = isExactMatrixMode ? (columns / pixelScale) * opt.pixelScale : opt.columns;
+            const widthInches = Math.round((optionColumns * beadWidthMm) / 25.4);
             return (
               <button
                 key={opt.label}
                 type="button"
-                className={`btn btn-sm ${isActive ? 'btn-primary' : ''}`}
-                style={{ justifyContent: 'center' }}
+                className={`btn btn-sm size-option ${isActive ? 'btn-primary' : ''}`}
                 onClick={() =>
                   isExactMatrixMode ? onChangePixelScale(opt.pixelScale) : onChangeColumns(opt.columns)
                 }
               >
-                {opt.label}
+                <span>{opt.label}</span>
+                <span className="size-option-sub">≈ {widthInches}″ wide</span>
               </button>
             );
           })}

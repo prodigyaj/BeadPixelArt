@@ -150,7 +150,11 @@ export function ImageUpload({
               onClick={() => onSelectSample(sample)}
               title={`${sample.name} - ${sample.description}`}
             >
-              <img src={sample.src} alt={sample.name} />
+              <img
+                src={sample.thumbSrc || sample.src}
+                alt={sample.name}
+                className={sample.isExactMatrix ? 'pixel-thumb' : undefined}
+              />
               {sample.isExactMatrix && (
                 <span
                   style={{

@@ -4,6 +4,10 @@ import mdns from 'multicast-dns';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { profileStorePlugin } from './server/profileStore.js';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // Detect active local IPv4 address
 function getLocalIp() {
@@ -103,6 +107,8 @@ export default defineConfig({
   plugins: [
     react(),
     localMdnsPlugin(),
+    // Saved profiles & projects are stored on the machine running the server
+    profileStorePlugin({ dataDir: path.join(projectRoot, 'data') }),
   ],
   server: {
     host: true, // Listen on all local interfaces (0.0.0.0)

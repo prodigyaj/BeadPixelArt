@@ -71,12 +71,41 @@ function renderBeadSprite(bead, cellW, cellH, scale) {
   return sprite;
 }
 
+/**
+ * Green check badge stamped on every strung bead, sized for one cell at the given pixel scale
+ */
+function renderCheckSprite(cellW, cellH, scale) {
+  const sprite = document.createElement('canvas');
+  sprite.width = Math.max(1, Math.ceil(cellW * scale));
+  sprite.height = Math.max(1, Math.ceil(cellH * scale));
+  const ctx = sprite.getContext('2d');
+  ctx.scale(sprite.width / cellW, sprite.height / cellH);
+
+  // Dim the bead so finished areas recede, then draw a bold check on top
+  ctx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+  ctx.fillRect(0, 0, cellW, cellH);
+  const size = Math.min(cellW, cellH) * 0.6;
+  const cx = cellW / 2;
+  const cy = cellH / 2;
+  ctx.strokeStyle = '#34D399';
+  ctx.lineWidth = Math.max(1.5, size * 0.22);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - size * 0.45, cy);
+  ctx.lineTo(cx - size * 0.1, cy + size * 0.32);
+  ctx.lineTo(cx + size * 0.48, cy - size * 0.35);
+  ctx.stroke();
+  return sprite;
+}
+
 export function PatternCanvas({
   matrix,
   beadPreset,
   activeCol,
-  activeBeadIndex, // 0 is bottom, height-1 is top
+  beadProgress = {}, // { [col]: beads strung from the bottom }
   onSelectThread,
+  onSetThreadProgress, // (col, count) => void
   isolatedColorId,
   renderMode = 'beads' // 'beads' | 'flat' | 'loom'
 }) {
@@ -90,6 +119,10 @@ export function PatternCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hoverInfo, setHoverInfo] = useState(null);
+  // Distinguishes a tap on a bead from the end of a drag-to-pan
+  const dragDistanceRef = useRef(0);
+
+  const strungOf = (col) => Math.min(beadProgress[col] || 0, matrix?.length || 0);
 
   const height = matrix?.length || 0;
   const width = matrix?.[0]?.length || 0;
@@ -99,7 +132,7 @@ export function PatternCanvas({
     if (!containerRef.current || width === 0 || height === 0) return;
     const rect = containerRef.current.getBoundingClientRect();
     const availableW = rect.width - 60;
-    const availableH = rect.height - 60;
+    const availableH = rect.height - 100; // room for the column numbers and done-thread checks
 
     const beadW = beadPreset?.widthMm || 9;
     const beadH = beadPreset?.heightMm || 6;
@@ -180,11 +213,13 @@ export function PatternCanvas({
       spriteCacheRef.current = { key: spriteKey, sprites: new Map() };
     }
     const { sprites } = spriteCacheRef.current;
-    const getSprite = (bead) => {
+    const getSprite = (bead, isCheck = false) => {
       const key = `${bead.hex}|${bead.finish}`;
       let sprite = sprites.get(key);
       if (!sprite) {
-        sprite = renderBeadSprite(bead, cellW, cellH, spriteScale);
+        sprite = isCheck
+          ? renderCheckSprite(cellW, cellH, spriteScale)
+          : renderBeadSprite(bead, cellW, cellH, spriteScale);
         sprites.set(key, sprite);
       }
       return sprite;
@@ -214,6 +249,15 @@ export function PatternCanvas({
     }
     ctx.globalAlpha = 1.0;
 
+    // Strung beads: dimmed with a green check (threads fill from the bottom up)
+    const checkSprite = getSprite({ hex: 'check', finish: 'check' }, true);
+    for (let x = xStart; x < xEnd; x++) {
+      const count = Math.min(beadProgress[x] || 0, height);
+      for (let y = Math.max(yStart, height - count); y < yEnd; y++) {
+        ctx.drawImage(checkSprite, originX + x * cellW, originY + y * cellH, cellW, cellH);
+      }
+    }
+
     // Highlight Active Column (Thread)
     if (activeCol >= 0 && activeCol < width) {
       const activeX = originX + activeCol * cellW;
@@ -224,9 +268,9 @@ export function PatternCanvas({
       ctx.strokeRect(activeX - 1, originY - 4, cellW + 2, totalH + 8);
       ctx.shadowBlur = 0;
 
-      // Highlight Active Bead along this thread (Bottom to Top)
-      // activeBeadIndex: 0 is bottom (y = height - 1), height-1 is top (y = 0)
-      if (activeBeadIndex !== null && activeBeadIndex >= 0 && activeBeadIndex < height) {
+      // Highlight the next bead to string on this thread (counted from the bottom)
+      const activeBeadIndex = Math.min(beadProgress[activeCol] || 0, height);
+      if (activeBeadIndex < height) {
         const beadY = height - 1 - activeBeadIndex;
         const beadPy = originY + beadY * cellH;
 
@@ -244,6 +288,17 @@ export function PatternCanvas({
     ctx.font = '10px JetBrains Mono';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+
+    // Finished threads get a green check above the column numbers
+    ctx.fillStyle = '#34D399';
+    ctx.font = 'bold 13px JetBrains Mono';
+    for (let x = 0; x < width; x++) {
+      if ((beadProgress[x] || 0) >= height) {
+        ctx.fillText('✓', originX + x * cellW + cellW / 2, originY - 24);
+      }
+    }
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+    ctx.font = '10px JetBrains Mono';
 
     // Top Column Numbers (1, 5, 10, ...)
     for (let x = 0; x < width; x++) {
@@ -265,7 +320,7 @@ export function PatternCanvas({
     }
 
     ctx.restore();
-  }, [matrix, width, height, beadPreset, zoom, offset, activeCol, activeBeadIndex, isolatedColorId, renderMode]);
+  }, [matrix, width, height, beadPreset, zoom, offset, activeCol, beadProgress, isolatedColorId, renderMode]);
 
   // Mouse wheel zoom
   const handleWheel = (e) => {
@@ -278,19 +333,32 @@ export function PatternCanvas({
   const handleMouseDown = (e) => {
     if (e.button !== 0) return;
     setIsPanning(true);
+    dragDistanceRef.current = 0;
     setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
   };
 
   const handleMouseMove = (e) => {
     if (isPanning) {
+      dragDistanceRef.current += Math.abs(e.movementX) + Math.abs(e.movementY);
       setOffset({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
       });
     }
 
-    // Calculate hover bead
-    if (!canvasRef.current || width === 0 || height === 0) return;
+    // Only update state when the hovered bead actually changes, so mouse moves within
+    // a single bead don't re-render the component
+    const hit = hitTest(e);
+    setHoverInfo((prev) =>
+      prev && hit && prev.col === hit.col && prev.rowFromBottom === hit.rowFromBottom && prev.bead === hit.bead
+        ? prev
+        : hit
+    );
+  };
+
+  // Maps a pointer position to the bead under it: { col (1-based), rowFromBottom, bead } or null
+  const hitTest = (e) => {
+    if (!canvasRef.current || width === 0 || height === 0) return null;
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
@@ -311,35 +379,33 @@ export function PatternCanvas({
     const col = Math.floor((worldX + totalW / 2) / cellW);
     const row = Math.floor((worldY + totalH / 2) / cellH);
 
-    // Only update state when the hovered bead actually changes, so mouse moves within
-    // a single bead don't re-render the component
-    if (col >= 0 && col < width && row >= 0 && row < height) {
-      const bead = matrix[row][col];
-      const rowFromBottom = height - row;
-      setHoverInfo((prev) =>
-        prev && prev.col === col + 1 && prev.rowFromBottom === rowFromBottom && prev.bead === bead
-          ? prev
-          : { col: col + 1, rowFromBottom, bead }
-      );
-    } else {
-      setHoverInfo(null);
-    }
+    if (col < 0 || col >= width || row < 0 || row >= height) return null;
+    return { col: col + 1, rowFromBottom: height - row, bead: matrix[row][col] };
   };
 
   const handleMouseUp = () => {
     setIsPanning(false);
   };
 
+  // Tap a thread to make it active; tap a bead on the active thread to mark it (and every
+  // bead below it) as strung, or tap a strung bead to take it and the beads above it back off
   const handleClick = (e) => {
-    if (hoverInfo) {
-      onSelectThread(hoverInfo.col - 1);
+    const hit = hitTest(e);
+    if (!hit || dragDistanceRef.current > 5) return;
+    const col = hit.col - 1;
+    if (col !== activeCol) {
+      onSelectThread(col);
+      return;
     }
+    const strung = strungOf(col);
+    onSetThreadProgress(col, hit.rowFromBottom <= strung ? hit.rowFromBottom - 1 : hit.rowFromBottom);
   };
 
   // Touch handlers for mobile (iOS Safari & Android Chrome)
   const touchRef = useRef({ lastDist: 0, lastPos: { x: 0, y: 0 } });
 
   const handleTouchStart = (e) => {
+    dragDistanceRef.current = 0;
     if (e.touches.length === 1) {
       const t = e.touches[0];
       touchRef.current.lastPos = { x: t.clientX - offset.x, y: t.clientY - offset.y };
@@ -351,6 +417,7 @@ export function PatternCanvas({
   };
 
   const handleTouchMove = (e) => {
+    dragDistanceRef.current += 10; // any touch movement is a pan, not a tap
     if (e.touches.length === 1) {
       const t = e.touches[0];
       setOffset({

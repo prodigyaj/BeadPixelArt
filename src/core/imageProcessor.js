@@ -175,3 +175,15 @@ export function processExactMatrixImage({ image, palette }) {
   return matrix;
 }
 
+
+/**
+ * Enlarges a bead matrix so each cell becomes a factor × factor block of beads
+ * (used to make small pixel-art designs into bigger wall hangings)
+ */
+export function scaleMatrix(matrix, factor) {
+  if (factor <= 1) return matrix;
+  return Array.from({ length: matrix.length * factor }, (_, y) => {
+    const sourceRow = matrix[Math.floor(y / factor)];
+    return Array.from({ length: sourceRow.length * factor }, (_, x) => sourceRow[Math.floor(x / factor)]);
+  });
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, FileText, Eye, Layers, Palette, Wifi, Heart } from 'lucide-react';
+import { Download, FileText, Eye, Layers, Palette, Wifi, Heart, User, SlidersHorizontal } from 'lucide-react';
 
 export function Header({
   activeBeadPreset,
@@ -12,6 +12,12 @@ export function Header({
   onOpenWallMockup,
   onOpenPaletteManager,
   onOpenNetworkAccess,
+  onOpenProfile,
+  currentProfileName,
+  isGuest,
+  isAdvancedMode,
+  onToggleAdvancedMode,
+  currentProjectName,
   allowedColorsCount,
   totalColorsCount
 }) {
@@ -37,31 +43,61 @@ export function Header({
 
       <div className="header-actions">
         <button
-          className="btn"
-          onClick={onOpenNetworkAccess}
-          title="Open on phone or tablet via Wi-Fi"
+          className={`btn ${currentProfileName ? '' : 'btn-primary'}`}
+          onClick={onOpenProfile}
+          title={currentProfileName ? 'Save or open your projects' : 'Sign in or create a profile to save your projects'}
         >
-          <Wifi size={15} color="#10B981" />
-          <span>Wi-Fi Access</span>
+          <User size={15} />
+          <span>
+            {currentProfileName
+              ? currentProjectName
+                ? `${currentProfileName} • ${currentProjectName}`
+                : currentProfileName
+              : isGuest
+                ? 'Guest • Sign In'
+                : 'Sign In'}
+          </span>
         </button>
 
         <button
-          className={`btn ${allowedColorsCount < totalColorsCount ? 'btn-primary' : ''}`}
-          onClick={onOpenPaletteManager}
-          title="Configure which bead colors you own or want to use"
+          className={`btn ${isAdvancedMode ? 'btn-primary' : ''}`}
+          onClick={onToggleAdvancedMode}
+          title={isAdvancedMode ? 'Back to the simple view' : 'Show all tuning tools (dithering, color optimizer, inventory, sharing)'}
         >
-          <Palette size={15} />
-          <span>My Inventory ({allowedColorsCount}/{totalColorsCount})</span>
+          <SlidersHorizontal size={15} />
+          <span>{isAdvancedMode ? 'Simple View' : 'Advanced'}</span>
         </button>
 
-        <button
-          className="btn"
-          onClick={onOpenWallMockup}
-          title="Preview hanging on a living room wall"
-        >
-          <Eye size={15} />
-          <span>Wall Preview</span>
-        </button>
+        {isAdvancedMode && (
+          <>
+            <button
+              className="btn"
+              onClick={onOpenNetworkAccess}
+              title="Open on phone or tablet via Wi-Fi"
+            >
+              <Wifi size={15} color="#10B981" />
+              <span>Wi-Fi Access</span>
+            </button>
+
+            <button
+              className={`btn ${allowedColorsCount < totalColorsCount ? 'btn-primary' : ''}`}
+              onClick={onOpenPaletteManager}
+              title="Configure which bead colors you own or want to use"
+            >
+              <Palette size={15} />
+              <span>My Inventory ({allowedColorsCount}/{totalColorsCount})</span>
+            </button>
+
+            <button
+              className="btn"
+              onClick={onOpenWallMockup}
+              title="Preview hanging on a living room wall"
+            >
+              <Eye size={15} />
+              <span>Wall Preview</span>
+            </button>
+          </>
+        )}
 
         <button
           className="btn"
@@ -72,14 +108,16 @@ export function Header({
           <span>Word Chart Guide</span>
         </button>
 
-        <button
-          className="btn"
-          onClick={onExportCsv}
-          title="Download Matrix CSV data"
-        >
-          <FileText size={15} />
-          <span>CSV Matrix</span>
-        </button>
+        {isAdvancedMode && (
+          <button
+            className="btn"
+            onClick={onExportCsv}
+            title="Download Matrix CSV data"
+          >
+            <FileText size={15} />
+            <span>CSV Matrix</span>
+          </button>
+        )}
 
         <button
           className="btn btn-primary"

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Saved profiles & projects (local to the machine running the server)
+/data/

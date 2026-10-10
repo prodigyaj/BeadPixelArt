@@ -845,3 +845,50 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border-radius: 9999px;
   font-weight: 500;
 }
+
+/* Pixel-art thumbnails: keep hard pixel edges instead of blurring when scaled up */
+.sample-card img.pixel-thumb {
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+/* Threading progress */
+.progress-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981, #34D399);
+  transition: width 0.25s ease;
+}
+
+.next-bead-callout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.next-bead-callout.done {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #A7F3D0;
+}
+
+.step-card.done {
+  opacity: 0.55;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.step-card.done .step-count,
+.step-card.done .step-range {
+  text-decoration: line-through;
+}

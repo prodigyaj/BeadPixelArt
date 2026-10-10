@@ -1,3 +1,5 @@
+import { PIXEL_ART_SAMPLES } from './pixelArtSamples.js';
+
 // Built-in sample images for instant demonstration
 
 // 1. Vibrant Sunset Mountain Tapestry
@@ -120,6 +122,7 @@ function toDataUri(svg) {
 }
 
 export const SAMPLE_IMAGES = [
+  ...PIXEL_ART_SAMPLES,
   {
     id: 'sunset',
     name: 'Sunset Mountain Tapestry',

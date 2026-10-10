@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import { calculatePhysicalSpecs } from '../core/beadSpecs.js';
 
 export function WallMockupModal({

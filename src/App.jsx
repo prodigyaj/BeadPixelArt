@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header.jsx';
 import { ImageUpload } from './components/ImageUpload.jsx';
 import { WallCalculator } from './components/WallCalculator.jsx';
@@ -22,7 +22,27 @@ import {
   processExactMatrixImage
 } from './core/imageProcessor.js';
 import { generateWordChart, calculateColorStats } from './core/threading.js';
-import { deltaE76, rgbToLab, consolidateMinorityColors } from './core/colorLab.js';
+import { consolidateMinorityColors } from './core/colorLab.js';
+
+// Exact 1:1 mode renders one bead per source pixel; beyond this size the grid becomes unusably large
+const MAX_EXACT_MATRIX_DIM = 256;
+const DEFAULT_COLUMNS = 40;
+
+// Triggers a browser download for a Blob and releases its object URL afterwards
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+// Quotes a CSV field when it contains a delimiter, quote, or newline
+function csvField(value) {
+  const str = String(value);
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
 
 export default function App() {
   // 1. Bead Specifications (Default: 6x9mm Pony Beads from Amazon listing)
@@ -30,7 +50,7 @@ export default function App() {
   const [customBeadSpecs, setCustomBeadSpecs] = useState({ widthMm: 9.0, heightMm: 6.0 });
 
   // 2. Sizing and Grid
-  const [columns, setColumns] = useState(40);
+  const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [rows, setRows] = useState(50);
   const [lockAspectRatio, setLockAspectRatio] = useState(true);
 
@@ -51,7 +71,7 @@ export default function App() {
   const [activeBeadIndex, setActiveBeadIndex] = useState(0); // 0 is bottom, height-1 is top
   const [isolatedColorId, setIsolatedColorId] = useState(null);
   const [activePaletteLimit, setActivePaletteLimit] = useState(null);
-  const [renderMode, setRenderMode] = useState('beads');
+  const [renderMode] = useState('beads');
   const [isWallMockupOpen, setIsWallMockupOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
 
@@ -109,12 +129,19 @@ export default function App() {
 
   // Handler for toggling exact matrix mode
   const handleToggleExactMatrixMode = (enableExact) => {
+    if (
+      enableExact &&
+      loadedImage &&
+      (loadedImage.naturalWidth > MAX_EXACT_MATRIX_DIM || loadedImage.naturalHeight > MAX_EXACT_MATRIX_DIM)
+    ) {
+      return;
+    }
     setIsExactMatrixMode(enableExact);
     if (enableExact && loadedImage) {
       setColumns(loadedImage.naturalWidth);
       setRows(loadedImage.naturalHeight);
     } else if (!enableExact && loadedImage) {
-      const defaultCols = 40;
+      const defaultCols = DEFAULT_COLUMNS;
       setColumns(defaultCols);
       const calculatedRows = Math.max(15, Math.round((defaultCols * beadAspectRatio) / imageRatio));
       setRows(calculatedRows);
@@ -230,20 +257,33 @@ export default function App() {
   }, [baseConsolidatedMatrix]);
 
   // Switch to custom uploaded image
-  const handleUploadCustom = (dataUri, filename) => {
+  const handleUploadCustom = (dataUri) => {
+    leaveExactMatrixMode();
     setActiveSampleId(null);
     setCurrentImageSrc(dataUri);
   };
 
   // Switch to sample
   const handleSelectSample = (sample) => {
+    if (!sample.isExactMatrix) leaveExactMatrixMode();
     setActiveSampleId(sample.id);
     setCurrentImageSrc(sample.src);
+  };
+
+  // Reset to standard mode before loading a new image; the image loader re-enables
+  // exact mode for pixel-art sources. Without this, a photo picked after the pixel
+  // sample would be rendered 1:1 (hundreds of thousands of beads) with stale dimensions.
+  const leaveExactMatrixMode = () => {
+    if (!isExactMatrixMode) return;
+    setIsExactMatrixMode(false);
+    setColumns(DEFAULT_COLUMNS);
   };
 
   // Export 1: High-Res PNG
   const handleExportPng = () => {
     if (!finalMatrix) return;
+    const rows = finalMatrix.length;
+    const columns = finalMatrix[0].length;
     const exportCanvas = document.createElement('canvas');
     const scale = 20; // 20px per bead for high-res output
     const pad = 60;
@@ -297,15 +337,14 @@ export default function App() {
     if (!finalMatrix) return;
     const chart = generateWordChart(finalMatrix, activeBeadPreset);
     const blob = new Blob([chart], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement('a');
-    link.download = `bead-word-chart-${columns}x${rows}.txt`;
-    link.href = URL.createObjectURL(blob);
-    link.click();
+    downloadBlob(blob, `bead-word-chart-${finalMatrix[0].length}x${finalMatrix.length}.txt`);
   };
 
   // Export 3: CSV Matrix
   const handleExportCsv = () => {
     if (!finalMatrix) return;
+    const rows = finalMatrix.length;
+    const columns = finalMatrix[0].length;
     const csvRows = [];
     csvRows.push(['Row (from Bottom)', ...Array.from({ length: columns }, (_, i) => `Thread ${i + 1}`)]);
 
@@ -318,12 +357,9 @@ export default function App() {
       csvRows.push(rowData);
     }
 
-    const csvContent = csvRows.map((r) => r.join(',')).join('\n');
+    const csvContent = csvRows.map((r) => r.map(csvField).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    const link = document.createElement('a');
-    link.download = `bead-matrix-${columns}x${rows}.csv`;
-    link.href = URL.createObjectURL(blob);
-    link.click();
+    downloadBlob(blob, `bead-matrix-${columns}x${rows}.csv`);
   };
 
   // Currently appearing colors in the artwork
@@ -368,6 +404,7 @@ export default function App() {
               width: loadedImage?.naturalWidth || 0,
               height: loadedImage?.naturalHeight || 0
             }}
+            maxExactMatrixDim={MAX_EXACT_MATRIX_DIM}
           />
 
           <WallCalculator
@@ -497,7 +534,7 @@ export default function App() {
         onClose={() => setIsNetworkModalOpen(false)}
         dnsUrl="https://beadstudio.local:5173/"
         hostUrl="https://aj.local:5173/"
-        ipUrl="https://10.0.0.22:5173/"
+        ipUrl={`https://${__LAN_IP__}:5173/`}
       />
 
       {/* Wall Hanging Mockup Modal */}

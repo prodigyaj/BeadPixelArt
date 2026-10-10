@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { UploadCloud, Image as ImageIcon, Sparkles, Grid, Wand2 } from 'lucide-react';
+import { UploadCloud, Grid, Wand2 } from 'lucide-react';
 import { SAMPLE_IMAGES } from '../data/sampleImages.js';
 
 export function ImageUpload({
@@ -8,9 +8,12 @@ export function ImageUpload({
   onUploadCustom,
   isExactMatrixMode,
   onToggleExactMatrixMode,
-  imageDimensions
+  imageDimensions,
+  maxExactMatrixDim
 }) {
   const fileInputRef = useRef(null);
+  const isTooLargeForExact =
+    imageDimensions.width > maxExactMatrixDim || imageDimensions.height > maxExactMatrixDim;
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -61,6 +64,12 @@ export function ImageUpload({
           className={`btn btn-sm ${isExactMatrixMode ? 'btn-primary' : ''}`}
           style={{ justifyContent: 'center', fontSize: '0.74rem' }}
           onClick={() => onToggleExactMatrixMode(true)}
+          disabled={isTooLargeForExact}
+          title={
+            isTooLargeForExact
+              ? `Exact mode needs an image of at most ${maxExactMatrixDim}×${maxExactMatrixDim} pixels`
+              : undefined
+          }
         >
           <Grid size={13} />
           <span>Exact 1:1 Matrix</span>

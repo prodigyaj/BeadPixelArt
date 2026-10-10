@@ -1,5 +1,75 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { ZoomIn, ZoomOut, Maximize, RotateCcw, Eye, Layers, Compass } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react';
+
+/**
+ * Renders one realistic 3D pony bead barrel (body, finish shading, hole, thread)
+ * into an offscreen canvas sized cellW × cellH at the given pixel scale
+ */
+function renderBeadSprite(bead, cellW, cellH, scale) {
+  const sprite = document.createElement('canvas');
+  sprite.width = Math.max(1, Math.ceil(cellW * scale));
+  sprite.height = Math.max(1, Math.ceil(cellH * scale));
+  const ctx = sprite.getContext('2d');
+  ctx.scale(sprite.width / cellW, sprite.height / cellH);
+
+  const padX = 1;
+  const padY = 0.8;
+  const radius = Math.min(cellW, cellH) * 0.22;
+  const bodyPath = () => {
+    ctx.beginPath();
+    ctx.roundRect(padX, padY, cellW - padX * 2, cellH - padY * 2, radius);
+  };
+
+  // Barrel body
+  ctx.fillStyle = bead.hex;
+  bodyPath();
+  ctx.fill();
+
+  // Physical finish shading
+  let grad;
+  if (bead.finish === 'Matte') {
+    // Soft velvet diffuse shading (low contrast, no glossy specular)
+    grad = ctx.createLinearGradient(0, 0, 0, cellH);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+    grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.0)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+  } else if (bead.finish === 'Pearl') {
+    // Pearl iridescent sheen
+    grad = ctx.createLinearGradient(0, 0, cellW, cellH);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+    grad.addColorStop(0.35, 'rgba(220, 230, 255, 0.2)');
+    grad.addColorStop(0.7, 'rgba(255, 240, 245, 0.15)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
+  } else {
+    // Opaque Classic Glossy Highlight
+    grad = ctx.createLinearGradient(0, 0, 0, cellH);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+    grad.addColorStop(0.25, 'rgba(255, 255, 255, 0.12)');
+    grad.addColorStop(0.75, 'rgba(0, 0, 0, 0.0)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
+  }
+  ctx.fillStyle = grad;
+  bodyPath();
+  ctx.fill();
+
+  // Center 4mm bead hole (vertical thread passes through)
+  const holeW = cellW * 0.38;
+  const holeH = cellH * 0.42;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.beginPath();
+  ctx.ellipse(cellW / 2, cellH / 2, holeW / 2, holeH / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Thread line through hole
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cellW / 2, 0);
+  ctx.lineTo(cellW / 2, cellH);
+  ctx.stroke();
+
+  return sprite;
+}
 
 export function PatternCanvas({
   matrix,
@@ -12,6 +82,8 @@ export function PatternCanvas({
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  // Bead sprites reused across redraws (pan, thread stepping) until size or zoom changes
+  const spriteCacheRef = useRef({ key: null, sprites: new Map() });
 
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -55,9 +127,11 @@ export function PatternCanvas({
     const cWidth = container.clientWidth;
     const cHeight = container.clientHeight;
 
-    canvas.width = cWidth;
-    canvas.height = cHeight;
+    // Resizing a canvas reallocates its backing store, so only do it when the size changes
+    if (canvas.width !== cWidth) canvas.width = cWidth;
+    if (canvas.height !== cHeight) canvas.height = cHeight;
 
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, cWidth, cHeight);
 
     ctx.save();
@@ -88,17 +162,43 @@ export function PatternCanvas({
       ctx.stroke();
     }
 
+    // Only draw beads inside the visible viewport (matters when zoomed in)
+    const viewLeft = (-cWidth / 2 - offset.x) / zoom;
+    const viewRight = (cWidth / 2 - offset.x) / zoom;
+    const viewTop = (-cHeight / 2 - offset.y) / zoom;
+    const viewBottom = (cHeight / 2 - offset.y) / zoom;
+    const xStart = Math.max(0, Math.floor((viewLeft - originX) / cellW));
+    const xEnd = Math.min(width, Math.ceil((viewRight - originX) / cellW));
+    const yStart = Math.max(0, Math.floor((viewTop - originY) / cellH));
+    const yEnd = Math.min(height, Math.ceil((viewBottom - originY) / cellH));
+
+    // Each distinct bead color is rendered once into a sprite at the current on-screen
+    // resolution, then stamped per cell, instead of rebuilding paths and gradients per bead
+    const spriteScale = Math.min(zoom, 12);
+    const spriteKey = `${cellW}|${cellH}|${spriteScale}`;
+    if (spriteCacheRef.current.key !== spriteKey) {
+      spriteCacheRef.current = { key: spriteKey, sprites: new Map() };
+    }
+    const { sprites } = spriteCacheRef.current;
+    const getSprite = (bead) => {
+      const key = `${bead.hex}|${bead.finish}`;
+      let sprite = sprites.get(key);
+      if (!sprite) {
+        sprite = renderBeadSprite(bead, cellW, cellH, spriteScale);
+        sprites.set(key, sprite);
+      }
+      return sprite;
+    };
+
     // Draw Beads
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
+    for (let y = yStart; y < yEnd; y++) {
+      for (let x = xStart; x < xEnd; x++) {
         const bead = matrix[y][x];
         const px = originX + x * cellW;
         const py = originY + y * cellH;
 
         const isIsolated = isolatedColorId && bead.id !== isolatedColorId;
-        const opacity = isIsolated ? 0.18 : 1.0;
-
-        ctx.globalAlpha = opacity;
+        ctx.globalAlpha = isIsolated ? 0.18 : 1.0;
 
         if (renderMode === 'flat') {
           // Flat pixel rectangle
@@ -108,76 +208,11 @@ export function PatternCanvas({
           ctx.lineWidth = 0.5;
           ctx.strokeRect(px, py, cellW, cellH);
         } else {
-          // Realistic 3D Pony Bead Barrel
-          const padX = 1;
-          const padY = 0.8;
-          const radius = Math.min(cellW, cellH) * 0.22;
-
-          // Barrel body
-          ctx.fillStyle = bead.hex;
-          ctx.beginPath();
-          ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
-          ctx.fill();
-
-          // Physical finish shading
-          if (bead.finish === 'Matte') {
-            // Soft velvet diffuse shading (low contrast, no glossy specular)
-            const matteGrad = ctx.createLinearGradient(px, py, px, py + cellH);
-            matteGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-            matteGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.0)');
-            matteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
-            ctx.fillStyle = matteGrad;
-            ctx.beginPath();
-            ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
-            ctx.fill();
-          } else if (bead.finish === 'Pearl') {
-            // Pearl iridescent sheen
-            const pearlGrad = ctx.createLinearGradient(px, py, px + cellW, py + cellH);
-            pearlGrad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
-            pearlGrad.addColorStop(0.35, 'rgba(220, 230, 255, 0.2)');
-            pearlGrad.addColorStop(0.7, 'rgba(255, 240, 245, 0.15)');
-            pearlGrad.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
-            ctx.fillStyle = pearlGrad;
-            ctx.beginPath();
-            ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
-            ctx.fill();
-          } else {
-            // Opaque Classic Glossy Highlight
-            const grad = ctx.createLinearGradient(px, py, px, py + cellH);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-            grad.addColorStop(0.25, 'rgba(255, 255, 255, 0.12)');
-            grad.addColorStop(0.75, 'rgba(0, 0, 0, 0.0)');
-            grad.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.roundRect(px + padX, py + padY, cellW - padX * 2, cellH - padY * 2, radius);
-            ctx.fill();
-          }
-
-          // Center 4mm bead hole (vertical thread passes through)
-          const holeW = cellW * 0.38;
-          const holeH = cellH * 0.42;
-          const holeX = px + (cellW - holeW) / 2;
-          const holeY = py + (cellH - holeH) / 2;
-
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-          ctx.beginPath();
-          ctx.ellipse(holeX + holeW / 2, holeY + holeH / 2, holeW / 2, holeH / 2, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Thread line through hole
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(holeX + holeW / 2, py);
-          ctx.lineTo(holeX + holeW / 2, py + cellH);
-          ctx.stroke();
+          ctx.drawImage(getSprite(bead), px, py, cellW, cellH);
         }
-
-        ctx.globalAlpha = 1.0;
       }
     }
+    ctx.globalAlpha = 1.0;
 
     // Highlight Active Column (Thread)
     if (activeCol >= 0 && activeCol < width) {
@@ -276,14 +311,16 @@ export function PatternCanvas({
     const col = Math.floor((worldX + totalW / 2) / cellW);
     const row = Math.floor((worldY + totalH / 2) / cellH);
 
+    // Only update state when the hovered bead actually changes, so mouse moves within
+    // a single bead don't re-render the component
     if (col >= 0 && col < width && row >= 0 && row < height) {
       const bead = matrix[row][col];
       const rowFromBottom = height - row;
-      setHoverInfo({
-        col: col + 1,
-        rowFromBottom,
-        bead
-      });
+      setHoverInfo((prev) =>
+        prev && prev.col === col + 1 && prev.rowFromBottom === rowFromBottom && prev.bead === bead
+          ? prev
+          : { col: col + 1, rowFromBottom, bead }
+      );
     } else {
       setHoverInfo(null);
     }

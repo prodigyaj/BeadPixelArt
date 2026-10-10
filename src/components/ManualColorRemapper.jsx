@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, X, RefreshCw, Eye, Sparkles, AlertCircle } from 'lucide-react';
-import { PONY_BEAD_PALETTE } from '../palettes/ponyBeads.js';
+import { ArrowRight, Check, X, RefreshCw, Eye } from 'lucide-react';
 
 export function ManualColorRemapper({
   isOpen,

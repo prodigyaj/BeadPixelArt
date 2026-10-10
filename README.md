@@ -20,7 +20,7 @@
 - **HTTPS & Local Friendly DNS**: Zero-config HTTPS with built-in mDNS responder so you can use friendly URLs instead of raw IP addresses:
   - `https://beadstudio.local:5173/` (Local Friendly Domain)
   - `https://aj.local:5173/` (Device Hostname)
-  - `https://10.0.0.22:5173/` (Direct Local Network IP)
+  - `https://<your-LAN-IP>:5173/` (Direct Local Network IP, shown in the terminal and the Wi-Fi Access dialog)
 - **Cross-Platform Mobile Touch (iOS & Android)**: Single-finger pan, two-finger pinch-to-zoom, safe-area support, and QR code sharing for phones & tablets next to your beading board.
 
 ---
@@ -41,7 +41,7 @@ When running, the app is instantly accessible via:
 1. **Desktop**: [https://localhost:5173/](https://localhost:5173/)
 2. **Local Friendly DNS**: `https://beadstudio.local:5173/`
 3. **mDNS Device Name**: `https://aj.local:5173/`
-4. **Local Wi-Fi IP**: `https://10.0.0.22:5173/`
+4. **Local Wi-Fi IP**: `https://<your-LAN-IP>:5173/` (printed by Vite on startup)
 
 *(Note: Because this is a local development SSL certificate, your browser may show a one-time "Advanced → Proceed" security confirmation).*
 

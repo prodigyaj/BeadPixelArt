@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ruler, Sparkles, Lock, Unlock, Sliders, Info } from 'lucide-react';
+import { Ruler, Sparkles, Lock, Unlock } from 'lucide-react';
 import { BEAD_PRESETS, calculatePhysicalSpecs } from '../core/beadSpecs.js';
 
 export function WallCalculator({

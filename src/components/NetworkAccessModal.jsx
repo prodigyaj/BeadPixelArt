@@ -6,7 +6,7 @@ export function NetworkAccessModal({
   onClose,
   dnsUrl = 'https://beadstudio.local:5173/',
   hostUrl = 'https://aj.local:5173/',
-  ipUrl = 'https://10.0.0.22:5173/'
+  ipUrl = `https://${__LAN_IP__}:5173/`
 }) {
   const [activeUrlType, setActiveUrlType] = useState('dns'); // 'dns' | 'host' | 'ip'
   const [copied, setCopied] = useState(false);
@@ -123,7 +123,7 @@ export function NetworkAccessModal({
             onClick={() => setActiveUrlType('ip')}
             style={{ fontSize: '0.74rem', padding: '0.4rem 0.3rem', justifyContent: 'center' }}
           >
-            10.0.0.22 (IP)
+            {new URL(ipUrl).hostname} (IP)
           </button>
         </div>
 

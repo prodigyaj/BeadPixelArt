@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Palette, Sparkles, Filter, Check, ArrowRight, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Palette, Sparkles, ArrowRight, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, ExternalLink } from 'lucide-react';
 import { calculateColorStats } from '../core/threading.js';
 
 export function ColorBreakdown({
@@ -20,7 +20,7 @@ export function ColorBreakdown({
 }) {
   const [showSubstitutions, setShowSubstitutions] = useState(false);
 
-  const colorStats = matrix ? calculateColorStats(matrix, 1000) : [];
+  const colorStats = useMemo(() => (matrix ? calculateColorStats(matrix, 1000) : []), [matrix]);
   const totalBags = colorStats.reduce((acc, c) => acc + c.bagsNeeded, 0);
 
   const { enabled, mode, threshold } = consolidationConfig;

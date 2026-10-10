@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, FileText, Image as ImageIcon, Eye, Layers, Palette, Wifi, Heart } from 'lucide-react';
+import { Download, FileText, Eye, Layers, Palette, Wifi, Heart } from 'lucide-react';
 
 export function Header({
   activeBeadPreset,

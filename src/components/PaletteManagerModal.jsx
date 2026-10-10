@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Check, X, CheckSquare, Square, Sparkles, Filter, RefreshCw, Layers, ShieldCheck, ExternalLink, Bookmark } from 'lucide-react';
+import { Palette, X, CheckSquare, Square, Sparkles, ShieldCheck, ExternalLink, Bookmark } from 'lucide-react';
 import { REAL_COLLECTIONS } from '../palettes/ponyBeads.js';
 
 export function PaletteManagerModal({

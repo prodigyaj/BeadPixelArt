@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, ChevronUp, Copy, Check, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronUp } from 'lucide-react';
 import { getColumnRunLength } from '../core/threading.js';
 import confetti from 'canvas-confetti';
 
@@ -11,12 +11,14 @@ export function ThreadingGuide({
   onChangeActiveBeadIndex
 }) {
   const [completedThreads, setCompletedThreads] = useState(new Set());
-  const [copied, setCopied] = useState(false);
 
   const height = matrix?.length || 0;
   const width = matrix?.[0]?.length || 0;
 
-  const currentGroups = matrix ? getColumnRunLength(matrix, activeCol) : [];
+  const currentGroups = useMemo(
+    () => (matrix ? getColumnRunLength(matrix, activeCol) : []),
+    [matrix, activeCol]
+  );
 
   // Toggle thread completed
   const toggleCompleted = (col) => {

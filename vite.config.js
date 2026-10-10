@@ -96,6 +96,10 @@ const httpsConfig =
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Expose this machine's LAN IP so the Wi-Fi access modal shows a reachable address
+  define: {
+    __LAN_IP__: JSON.stringify(getLocalIp()),
+  },
   plugins: [
     react(),
     localMdnsPlugin(),

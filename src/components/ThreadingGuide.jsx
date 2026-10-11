@@ -313,7 +313,7 @@ export function ThreadingGuide({
 
       {/* Helpful Hint (keyboard version hidden on touch screens via CSS) */}
       <div className="tip-touch" style={{ fontSize: '0.72rem', color: '#64748B', lineHeight: '1.4' }}>
-        💡 <strong>Tip:</strong> Tap <strong>Bead Done</strong> after each bead, or tap a bead on the highlighted thread in the pattern to mark everything up to it. Pinch to zoom, drag to move.
+        💡 <strong>Tip:</strong> Tap <strong>Bead Done</strong> after each bead, or tap a bead on the highlighted thread in the pattern to mark everything up to it. Pinch with two fingers to zoom in on the pattern.
       </div>
       <div className="tip-keyboard" style={{ fontSize: '0.72rem', color: '#64748B', lineHeight: '1.4' }}>
         💡 <strong>Tip:</strong> <kbd style={{ background: '#1E293B', padding: '1px 4px', borderRadius: '3px' }}>Space</kbd> = bead done,{' '}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { rowForBead, beadNumberForRow, STRINGING_LABELS } from '../core/threading.js';
 
 /**
@@ -100,6 +100,9 @@ function renderCheckSprite(cellW, cellH, scale) {
   return sprite;
 }
 
+// How far past "whole pattern fits" users can zoom in
+const MAX_ZOOM_FACTOR = 4;
+
 export function PatternCanvas({
   matrix,
   beadPreset,
@@ -117,6 +120,8 @@ export function PatternCanvas({
   const spriteCacheRef = useRef({ key: null, sprites: new Map() });
 
   const [zoom, setZoom] = useState(1);
+  // Zoom that fits the whole pattern; zooming is limited to between this and MAX_ZOOM_FACTOR × closer
+  const [fitZoom, setFitZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -143,8 +148,9 @@ export function PatternCanvas({
     const totalW = width * beadW * scaleFactor;
     const totalH = height * beadH * scaleFactor;
 
-    const scale = Math.min(availableW / totalW, availableH / totalH, 1.8);
-    setZoom(Math.max(0.2, scale));
+    const scale = Math.max(0.2, Math.min(availableW / totalW, availableH / totalH, 1.8));
+    setZoom(scale);
+    setFitZoom(scale);
     setOffset({ x: 0, y: 0 });
   }, [width, height, beadPreset]);
 
@@ -330,16 +336,40 @@ export function PatternCanvas({
     ctx.restore();
   }, [matrix, width, height, beadPreset, zoom, offset, activeCol, beadProgress, stringingDirection, isolatedColorId, renderMode]);
 
-  // Mouse wheel zoom
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.15 : 0.85;
-    setZoom((prev) => Math.max(0.15, Math.min(12, prev * factor)));
-  };
+  // Zoom stays between "whole pattern fits" and MAX_ZOOM_FACTOR × closer; back at the fit level
+  // the pattern re-centers so it can't be left stranded off to one side
+  const maxZoom = fitZoom * MAX_ZOOM_FACTOR;
+  const zoomBy = useCallback(
+    (factor) => {
+      setZoom((prev) => {
+        const next = Math.max(fitZoom, Math.min(fitZoom * MAX_ZOOM_FACTOR, prev * factor));
+        if (next <= fitZoom) setOffset({ x: 0, y: 0 });
+        return next;
+      });
+    },
+    [fitZoom]
+  );
+
+  // A plain scroll wheel / two-finger trackpad scroll scrolls the page as usual. Only a deliberate
+  // zoom gesture (trackpad pinch, which browsers report as ctrl + wheel, or Ctrl/⌘ + wheel) zooms.
+  // Attached natively because React's wheel listener is passive and can't stop the browser's page zoom.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handleWheel = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      zoomBy(Math.exp(-e.deltaY * 0.01));
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [zoomBy]);
 
   // Drag pan
   const handleMouseDown = (e) => {
     if (e.button !== 0) return;
+    dragDistanceRef.current = 0;
+    if (zoom <= fitZoom) return; // nothing to pan when the whole pattern is visible
     setIsPanning(true);
     dragDistanceRef.current = 0;
     setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -409,43 +439,35 @@ export function PatternCanvas({
     onSetThreadProgress(col, hit.beadNumber <= strung ? hit.beadNumber - 1 : hit.beadNumber);
   };
 
-  // Touch handlers for mobile (iOS Safari & Android Chrome)
-  const touchRef = useRef({ lastDist: 0, lastPos: { x: 0, y: 0 } });
+  // Touch (iPad / phones): one finger scrolls the page like anywhere else (touch-action below);
+  // two fingers pinch to zoom and drag to move around the pattern
+  const touchRef = useRef({ lastDist: 0, lastMid: null });
+
+  const twoFingerState = (touches) => ({
+    dist: Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY),
+    mid: { x: (touches[0].clientX + touches[1].clientX) / 2, y: (touches[0].clientY + touches[1].clientY) / 2 }
+  });
 
   const handleTouchStart = (e) => {
     dragDistanceRef.current = 0;
-    if (e.touches.length === 1) {
-      const t = e.touches[0];
-      touchRef.current.lastPos = { x: t.clientX - offset.x, y: t.clientY - offset.y };
-    } else if (e.touches.length === 2) {
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      touchRef.current.lastDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    if (e.touches.length === 2) {
+      const { dist, mid } = twoFingerState(e.touches);
+      touchRef.current = { lastDist: dist, lastMid: mid };
     }
   };
 
   const handleTouchMove = (e) => {
-    dragDistanceRef.current += 10; // any touch movement is a pan, not a tap
-    if (e.touches.length === 1) {
-      const t = e.touches[0];
-      setOffset({
-        x: t.clientX - touchRef.current.lastPos.x,
-        y: t.clientY - touchRef.current.lastPos.y
-      });
-    } else if (e.touches.length === 2) {
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const newDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-      if (touchRef.current.lastDist > 0) {
-        const factor = newDist / touchRef.current.lastDist;
-        setZoom((prev) => Math.max(0.15, Math.min(12, prev * factor)));
-      }
-      touchRef.current.lastDist = newDist;
-    }
+    dragDistanceRef.current += 10; // any touch movement is a scroll or pinch, not a tap
+    if (e.touches.length !== 2) return;
+    const { dist, mid } = twoFingerState(e.touches);
+    const { lastDist, lastMid } = touchRef.current;
+    if (lastDist > 0) zoomBy(dist / lastDist);
+    if (lastMid) setOffset((prev) => ({ x: prev.x + mid.x - lastMid.x, y: prev.y + mid.y - lastMid.y }));
+    touchRef.current = { lastDist: dist, lastMid: mid };
   };
 
   const handleTouchEnd = () => {
-    touchRef.current.lastDist = 0;
+    touchRef.current = { lastDist: 0, lastMid: null };
   };
 
   return (
@@ -464,35 +486,28 @@ export function PatternCanvas({
         <div className="toolbar-group">
           <button
             className="btn btn-sm"
-            onClick={() => setZoom((z) => Math.min(12, z * 1.25))}
-            title="Zoom In"
-          >
-            <ZoomIn size={14} />
-          </button>
-          <button
-            className="btn btn-sm"
-            onClick={() => setZoom((z) => Math.max(0.15, z * 0.8))}
-            title="Zoom Out"
+            onClick={() => zoomBy(1 / 1.4)}
+            disabled={zoom <= fitZoom}
+            title="Zoom out (or pinch / Ctrl + scroll)"
           >
             <ZoomOut size={14} />
           </button>
           <button
             className="btn btn-sm"
-            onClick={fitToScreen}
-            title="Fit Tapestry to Viewport"
+            onClick={() => zoomBy(1.4)}
+            disabled={zoom >= maxZoom}
+            title="Zoom in (or pinch / Ctrl + scroll)"
           >
-            <Maximize size={14} />
-            <span>Fit</span>
+            <ZoomIn size={14} />
           </button>
           <button
             className="btn btn-sm"
-            onClick={() => {
-              setZoom(1);
-              setOffset({ x: 0, y: 0 });
-            }}
-            title="Reset Zoom & Pan"
+            onClick={fitToScreen}
+            disabled={zoom <= fitZoom && offset.x === 0 && offset.y === 0}
+            title="Show the whole pattern"
           >
-            <RotateCcw size={14} />
+            <Maximize size={14} />
+            <span>Fit</span>
           </button>
         </div>
       </div>
@@ -501,8 +516,7 @@ export function PatternCanvas({
       <div
         ref={containerRef}
         className="canvas-viewport"
-        style={{ touchAction: 'none' }}
-        onWheel={handleWheel}
+        style={{ touchAction: 'pan-x pan-y', cursor: zoom > fitZoom ? undefined : 'default' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

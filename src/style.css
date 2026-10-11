@@ -963,6 +963,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   /* Avoid Safari zooming the page when focusing a text field */
   select,
   input[type="text"],
+  input[type="search"],
   input[type="number"] {
     font-size: 16px;
   }
@@ -1096,4 +1097,42 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 0.66rem;
   opacity: 0.75;
   font-weight: 400;
+}
+
+/* Color search box */
+.color-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem 0 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+
+.color-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0;
+  outline: none;
+  box-shadow: none;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.85rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.color-search .btn {
+  border: none;
+  background: transparent;
+}
+
+/* Use our own clear button instead of the browser-native one */
+.color-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }

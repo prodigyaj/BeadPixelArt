@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Palette, X, CheckSquare, Square, Sparkles, ShieldCheck, ExternalLink, Bookmark } from 'lucide-react';
 import { REAL_COLLECTIONS } from '../palettes/ponyBeads.js';
+import { matchesColorSearch } from '../core/colorSearch.js';
 
 export function PaletteManagerModal({
   isOpen,
@@ -25,10 +26,7 @@ export function PaletteManagerModal({
   const filteredColors = allColors.filter((c) => {
     const matchesGroup = selectedGroup === 'All' || c.group === selectedGroup;
     const matchesFinish = selectedFinish === 'All' || (c.finish || 'Opaque') === selectedFinish;
-    const matchesSearch =
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.code && c.code.toLowerCase().includes(search.toLowerCase())) ||
-      c.id.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = matchesColorSearch(c, search);
     return matchesGroup && matchesFinish && matchesSearch;
   });
 

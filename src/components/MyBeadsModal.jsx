@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { X, Sparkles, Check } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Sparkles, Check, Search } from 'lucide-react';
 import { suggestDesigns } from '../core/suggestions.js';
+import { matchesColorSearch } from '../core/colorSearch.js';
 
 const STATUS_BADGES = {
   ready: { label: 'Ready to make', color: '#10B981', background: 'rgba(16, 185, 129, 0.15)' },
@@ -13,6 +14,8 @@ export function MyBeadsModal({ onClose, catalog, ownedIds, onChangeOwnedIds, sam
   const ownedSet = useMemo(() => new Set(ownedIds), [ownedIds]);
   const ownedColors = useMemo(() => catalog.filter((c) => ownedSet.has(c.id)), [catalog, ownedSet]);
   const isEverything = ownedColors.length === catalog.length;
+  const [search, setSearch] = useState('');
+  const visibleColors = catalog.filter((c) => matchesColorSearch(c, search));
 
   const suggestions = useMemo(
     () => (ownedColors.length >= 2 ? suggestDesigns(samples, catalog, ownedColors) : []),
@@ -56,8 +59,26 @@ export function MyBeadsModal({ onClose, catalog, ownedIds, onChangeOwnedIds, sam
               Every color is selected. Tap <strong>None</strong>, then tap just the bead colors you own.
             </span>
           )}
+          <div className="color-search">
+            <Search size={15} />
+            <input
+              type="search"
+              placeholder="Search colors: red, dark blue, pastel, matte, TB-002…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search bead colors"
+            />
+            {search && (
+              <button type="button" className="btn btn-sm" onClick={() => setSearch('')} aria-label="Clear search">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          {visibleColors.length === 0 && (
+            <span style={{ fontSize: '0.76rem', color: '#64748B' }}>No colors match “{search}”.</span>
+          )}
           <div className="bead-color-picker">
-            {catalog.map((color) => {
+            {visibleColors.map((color) => {
               const isOwned = ownedSet.has(color.id);
               return (
                 <button

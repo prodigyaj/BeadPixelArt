@@ -87,22 +87,22 @@ export function Header({
               <Palette size={15} />
               <span>My Inventory ({allowedColorsCount}/{totalColorsCount})</span>
             </button>
-
-            <button
-              className="btn"
-              onClick={onOpenWallMockup}
-              title="Preview hanging on a living room wall"
-            >
-              <Eye size={15} />
-              <span>Wall Preview</span>
-            </button>
           </>
         )}
 
         <button
           className="btn"
+          onClick={onOpenWallMockup}
+          title="Preview the hanging on a living room wall, to scale"
+        >
+          <Eye size={15} />
+          <span>Wall Preview</span>
+        </button>
+
+        <button
+          className="btn"
           onClick={onExportWordChart}
-          title="Download printable column-by-column Word Chart (Bottom to Top)"
+          title="Download a printable thread-by-thread Word Chart in your stringing order"
         >
           <FileText size={15} />
           <span>Word Chart Guide</span>

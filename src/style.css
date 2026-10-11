@@ -1136,3 +1136,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Stringing direction choice in the threading panel */
+.direction-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}

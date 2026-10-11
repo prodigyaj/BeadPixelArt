@@ -1,39 +1,49 @@
 // Threading and Stringing Pattern Utilities
-// Columns are vertical threads (Left to Right)
-// Beads along each thread are threaded strictly from BOTTOM to TOP
+// Columns are vertical threads (Left to Right). Beads go onto each thread in one of two orders:
+//   'top-down'  - thread tied to the dowel first, each new bead pushed up under the last (first bead = top)
+//   'bottom-up' - knot / stopper bead at the bottom, beads drop down onto it (first bead = bottom)
+
+export const DEFAULT_STRINGING_DIRECTION = 'top-down';
+
+export const STRINGING_LABELS = {
+  'top-down': { start: 'top', end: 'bottom', arrow: 'TOP → BOTTOM' },
+  'bottom-up': { start: 'bottom', end: 'top', arrow: 'BOTTOM → TOP' }
+};
 
 /**
- * Extracts a column's beads ordered from BOTTOM to TOP
- * @param {Array<Array<Object>>} matrix - matrix[y][x] where y=0 is top, y=height-1 is bottom
- * @param {number} colIndex - 0-indexed column (thread)
- * @returns {Array<{ beadIndex: number, rowY: number, color: Object }>}
+ * Matrix row (0 = visual top) for the Nth bead strung on a thread (1-based)
  */
-export function getColumnBottomToTop(matrix, colIndex) {
-  const height = matrix.length;
-  const columnBeads = [];
-
-  // Start at bottom row (height - 1) and move upwards to top row (0)
-  let beadNumber = 1;
-  for (let y = height - 1; y >= 0; y--) {
-    columnBeads.push({
-      beadNumber, // 1 to height
-      beadIndex: beadNumber - 1, // 0 to height-1
-      rowY: y, // corresponding matrix row (0 = visual top)
-      colX: colIndex,
-      color: matrix[y][colIndex]
-    });
-    beadNumber++;
-  }
-
-  return columnBeads;
+export function rowForBead(beadNumber, height, direction = DEFAULT_STRINGING_DIRECTION) {
+  return direction === 'bottom-up' ? height - beadNumber : beadNumber - 1;
 }
 
 /**
- * Computes run-length encoded groups for a column from BOTTOM to TOP
+ * Stringing position (1-based) of the bead at a matrix row
+ */
+export function beadNumberForRow(row, height, direction = DEFAULT_STRINGING_DIRECTION) {
+  return direction === 'bottom-up' ? height - row : row + 1;
+}
+
+/**
+ * Extracts a column's beads in the order they are strung
+ * @param {Array<Array<Object>>} matrix - matrix[y][x] where y=0 is top, y=height-1 is bottom
+ * @param {number} colIndex - 0-indexed column (thread)
+ * @returns {Array<{ beadNumber: number, rowY: number, colX: number, color: Object }>}
+ */
+export function getColumnSequence(matrix, colIndex, direction = DEFAULT_STRINGING_DIRECTION) {
+  const height = matrix.length;
+  return Array.from({ length: height }, (_, i) => {
+    const rowY = rowForBead(i + 1, height, direction);
+    return { beadNumber: i + 1, rowY, colX: colIndex, color: matrix[rowY][colIndex] };
+  });
+}
+
+/**
+ * Computes run-length encoded groups for a column in stringing order
  * Example: "8x Matte Beige (Beads 1-8)", "3x Jet Black (Beads 9-11)"
  */
-export function getColumnRunLength(matrix, colIndex) {
-  const columnBeads = getColumnBottomToTop(matrix, colIndex);
+export function getColumnRunLength(matrix, colIndex, direction = DEFAULT_STRINGING_DIRECTION) {
+  const columnBeads = getColumnSequence(matrix, colIndex, direction);
   if (columnBeads.length === 0) return [];
 
   const groups = [];
@@ -74,7 +84,8 @@ export function getColumnRunLength(matrix, colIndex) {
 /**
  * Generates a complete printable / readable "Word Chart" for all threads
  */
-export function generateWordChart(matrix, beadSpecs) {
+export function generateWordChart(matrix, beadSpecs, direction = DEFAULT_STRINGING_DIRECTION) {
+  const labels = STRINGING_LABELS[direction];
   const height = matrix.length;
   const width = matrix[0].length;
   const lines = [];
@@ -85,13 +96,18 @@ export function generateWordChart(matrix, beadSpecs) {
   lines.push(`=======================================================`);
   lines.push(`Bead Type: ${beadSpecs.name}`);
   lines.push(`Matrix: ${width} Columns (Threads) × ${height} Rows (Beads per thread)`);
-  lines.push(`Assembly Rule: Thread Column by Column, strictly from BOTTOM to TOP`);
+  lines.push(`Assembly Rule: Thread Column by Column, strictly from ${labels.arrow}`);
+  lines.push(
+    direction === 'bottom-up'
+      ? `(Knot or stopper bead at the bottom first; bead 1 sits at the bottom)`
+      : `(Tie the thread to the dowel first; bead 1 sits at the top)`
+  );
   lines.push(`=======================================================\n`);
 
   for (let x = 0; x < width; x++) {
     const threadNum = x + 1;
-    lines.push(`--- THREAD #${threadNum} (of ${width}) --- [BOTTOM → TOP]`);
-    const groups = getColumnRunLength(matrix, x);
+    lines.push(`--- THREAD #${threadNum} (of ${width}) --- [${labels.arrow}]`);
+    const groups = getColumnRunLength(matrix, x, direction);
     groups.forEach((grp, idx) => {
       lines.push(
         `  ${idx + 1}. [Beads ${grp.startBead.toString().padStart(3, ' ')}-${grp.endBead.toString().padStart(3, ' ')}]  ` +

@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react';
+import { rowForBead, beadNumberForRow, STRINGING_LABELS } from '../core/threading.js';
 
 /**
  * Renders one realistic 3D pony bead barrel (body, finish shading, hole, thread)
@@ -103,7 +104,8 @@ export function PatternCanvas({
   matrix,
   beadPreset,
   activeCol,
-  beadProgress = {}, // { [col]: beads strung from the bottom }
+  beadProgress = {}, // { [col]: beads strung so far, in stringing order }
+  stringingDirection = 'top-down', // 'top-down' | 'bottom-up'
   onSelectThread,
   onSetThreadProgress, // (col, count) => void
   isolatedColorId,
@@ -253,11 +255,13 @@ export function PatternCanvas({
     }
     ctx.globalAlpha = 1.0;
 
-    // Strung beads: dimmed with a green check (threads fill from the bottom up)
+    // Strung beads: dimmed with a green check (threads fill from the starting end)
     const checkSprite = getSprite({ hex: 'check', finish: 'check' }, true);
     for (let x = xStart; x < xEnd; x++) {
       const count = Math.min(beadProgress[x] || 0, height);
-      for (let y = Math.max(yStart, height - count); y < yEnd; y++) {
+      const strungFrom = stringingDirection === 'bottom-up' ? height - count : 0;
+      const strungTo = stringingDirection === 'bottom-up' ? height : count;
+      for (let y = Math.max(yStart, strungFrom); y < Math.min(yEnd, strungTo); y++) {
         ctx.drawImage(checkSprite, originX + x * cellW, originY + y * cellH, cellW, cellH);
       }
     }
@@ -272,10 +276,10 @@ export function PatternCanvas({
       ctx.strokeRect(activeX - 1, originY - 4, cellW + 2, totalH + 8);
       ctx.shadowBlur = 0;
 
-      // Highlight the next bead to string on this thread (counted from the bottom)
-      const activeBeadIndex = Math.min(beadProgress[activeCol] || 0, height);
-      if (activeBeadIndex < height) {
-        const beadY = height - 1 - activeBeadIndex;
+      // Highlight the next bead to string on this thread
+      const strungOnActive = Math.min(beadProgress[activeCol] || 0, height);
+      if (strungOnActive < height) {
+        const beadY = rowForBead(strungOnActive + 1, height, stringingDirection);
         const beadPy = originY + beadY * cellH;
 
         ctx.strokeStyle = '#10B981';
@@ -313,18 +317,18 @@ export function PatternCanvas({
       }
     }
 
-    // Left & Right Row Numbers from BOTTOM to TOP (1 at bottom, height at top)
+    // Row numbers in stringing order (bead 1 is at the end the thread starts from)
     ctx.textAlign = 'right';
     for (let y = 0; y < height; y++) {
-      const rowFromBottom = height - y; // 1 at bottom, height at top
-      if (rowFromBottom === 1 || rowFromBottom % 5 === 0 || rowFromBottom === height) {
+      const beadNumber = beadNumberForRow(y, height, stringingDirection);
+      if (beadNumber === 1 || beadNumber % 5 === 0 || beadNumber === height) {
         const ty = originY + y * cellH + cellH / 2;
-        ctx.fillText(`${rowFromBottom}`, originX - 6, ty);
+        ctx.fillText(`${beadNumber}`, originX - 6, ty);
       }
     }
 
     ctx.restore();
-  }, [matrix, width, height, beadPreset, zoom, offset, activeCol, beadProgress, isolatedColorId, renderMode]);
+  }, [matrix, width, height, beadPreset, zoom, offset, activeCol, beadProgress, stringingDirection, isolatedColorId, renderMode]);
 
   // Mouse wheel zoom
   const handleWheel = (e) => {
@@ -354,13 +358,13 @@ export function PatternCanvas({
     // a single bead don't re-render the component
     const hit = hitTest(e);
     setHoverInfo((prev) =>
-      prev && hit && prev.col === hit.col && prev.rowFromBottom === hit.rowFromBottom && prev.bead === hit.bead
+      prev && hit && prev.col === hit.col && prev.beadNumber === hit.beadNumber && prev.bead === hit.bead
         ? prev
         : hit
     );
   };
 
-  // Maps a pointer position to the bead under it: { col (1-based), rowFromBottom, bead } or null
+  // Maps a pointer position to the bead under it: { col (1-based), beadNumber (stringing order), bead } or null
   const hitTest = (e) => {
     if (!canvasRef.current || width === 0 || height === 0) return null;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -384,15 +388,15 @@ export function PatternCanvas({
     const row = Math.floor((worldY + totalH / 2) / cellH);
 
     if (col < 0 || col >= width || row < 0 || row >= height) return null;
-    return { col: col + 1, rowFromBottom: height - row, bead: matrix[row][col] };
+    return { col: col + 1, beadNumber: beadNumberForRow(row, height, stringingDirection), bead: matrix[row][col] };
   };
 
   const handleMouseUp = () => {
     setIsPanning(false);
   };
 
-  // Tap a thread to make it active; tap a bead on the active thread to mark it (and every
-  // bead below it) as strung, or tap a strung bead to take it and the beads above it back off
+  // Tap a thread to make it active; tap a bead on the active thread to mark it (and every bead
+  // strung before it) as done, or tap a strung bead to take it and the beads after it back off
   const handleClick = (e) => {
     const hit = hitTest(e);
     if (!hit || dragDistanceRef.current > 5) return;
@@ -402,7 +406,7 @@ export function PatternCanvas({
       return;
     }
     const strung = strungOf(col);
-    onSetThreadProgress(col, hit.rowFromBottom <= strung ? hit.rowFromBottom - 1 : hit.rowFromBottom);
+    onSetThreadProgress(col, hit.beadNumber <= strung ? hit.beadNumber - 1 : hit.beadNumber);
   };
 
   // Touch handlers for mobile (iOS Safari & Android Chrome)
@@ -524,7 +528,7 @@ export function PatternCanvas({
               }}
             />
             <span>
-              <strong>Thread #{hoverInfo.col}</strong> | <strong>Bead #{hoverInfo.rowFromBottom}</strong> (from bottom):
+              <strong>Thread #{hoverInfo.col}</strong> | <strong>Bead #{hoverInfo.beadNumber}</strong> (from {STRINGING_LABELS[stringingDirection].start}):
             </span>
             <span style={{ color: '#F8FAFC', fontWeight: 500 }}>
               {hoverInfo.bead.name}

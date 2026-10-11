@@ -1,7 +1,7 @@
 # BeadPixel Art Studio
 
 > **Created with ❤️ by Ajay & Moss**  
-> An interactive web application engineered for **thread-based bead wall hangings and tapestries**, featuring **6×9mm pony beads as default**, column-wise **bottom-to-top threading instructions (Word Chart)**, a step-by-step **assembly companion**, an itemized **color shopping list**, **minority-to-majority optimizer**, **exact 1:1 pixel matrix mode**, **HTTPS security**, and **local friendly DNS (mDNS) sharing for iOS and Android**.
+> An interactive web application engineered for **thread-based bead wall hangings and tapestries**, featuring **6×9mm pony beads as default**, column-wise **threading instructions (Word Chart) top-down or bottom-up**, a step-by-step **assembly companion**, an itemized **color shopping list**, **minority-to-majority optimizer**, **exact 1:1 pixel matrix mode**, **HTTPS security**, and **local friendly DNS (mDNS) sharing for iOS and Android**.
 
 ---
 
@@ -9,7 +9,7 @@
 
 - **Created by Ajay & Moss**: Thoughtfully designed with craft-first workflows for thread tapestries.
 - **6×9 mm Pony Beads Default**: Calibrated to standard $9\text{mm}$ width $\times$ $6\text{mm}$ height barrel pony beads with non-square pixel aspect ratio correction ($1.5:1$). Also supports 5mm Midi Perler, 2.6mm Mini Perler, Delica seed beads, and custom millimeter dimensions.
-- **Column-Wise, Bottom-to-Top Threading**: Beads are strung column-by-column strictly from bottom ($Y = 1$) to top ($Y = H$).
+- **Column-Wise Threading, Your Direction**: Beads are strung column-by-column, either top-down (thread tied to the dowel first, the default) or bottom-up (knot or stopper bead first). The guide, pattern, Word Chart, and CSV all follow the chosen direction.
 - **Interactive Loom Assistant**: Step through beads hands-free with Spacebar (`Space` = step up, `← / →` = switch thread), highlighted on the 3D bead canvas with completion confetti.
 - **Minority → Majority Color Optimizer**: Interactive slider by project percentage or bead count that automatically merges low-count colors into your existing majority purchases to eliminate wasted 1,000-piece bags.
 - **Manual Color Regrouping**: Replace any color with another artwork color or catalog color, with real-time live preview before confirming.

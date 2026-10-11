@@ -27,7 +27,13 @@ import {
   processExactMatrixImage,
   scaleMatrix
 } from './core/imageProcessor.js';
-import { generateWordChart, calculateColorStats } from './core/threading.js';
+import {
+  generateWordChart,
+  calculateColorStats,
+  rowForBead,
+  DEFAULT_STRINGING_DIRECTION,
+  STRINGING_LABELS
+} from './core/threading.js';
 import { consolidateMinorityColors } from './core/colorLab.js';
 
 // Exact 1:1 mode renders one bead per source pixel; beyond this size the grid becomes unusably large
@@ -35,6 +41,7 @@ const MAX_EXACT_MATRIX_DIM = 256;
 const DEFAULT_COLUMNS = 40;
 
 const ADVANCED_MODE_KEY = 'beadpixel.advancedMode';
+const STRINGING_DIRECTION_KEY = 'beadpixel.stringingDirection';
 
 const paletteForPreset = (preset) => (preset.id.startsWith('perler') ? PERLER_PALETTE : PONY_BEAD_PALETTE);
 
@@ -89,8 +96,12 @@ export default function App() {
 
   // 5. Active Assembly and Interactive Guides
   const [activeCol, setActiveCol] = useState(0); // thread being strung, 0 to width-1
-  // Beads strung on each thread, counted from the bottom: { [col]: count }.
-  // Threads are strung bottom to top, so a count fully describes a thread; it's done at count === rows.
+  // Which end each thread fills from: 'top-down' (tied to the dowel first) or 'bottom-up' (knot first)
+  const [stringingDirection, setStringingDirection] = useState(
+    () => localStorage.getItem(STRINGING_DIRECTION_KEY) || DEFAULT_STRINGING_DIRECTION
+  );
+  // Beads strung on each thread so far, in stringing order: { [col]: count }.
+  // Beads always go on in sequence, so a count fully describes a thread; it's done at count === rows.
   const [beadProgress, setBeadProgress] = useState({});
   // Bumped on every progress change the user makes; drives auto-save
   const [progressVersion, setProgressVersion] = useState(0);
@@ -326,7 +337,7 @@ export default function App() {
     setColumns(DEFAULT_COLUMNS);
   };
 
-  // Threading progress (bead-by-bead, bottom to top)
+  // Threading progress (bead-by-bead, in stringing order)
   const resetProgress = () => {
     setActiveCol(0);
     setBeadProgress({});
@@ -339,6 +350,25 @@ export default function App() {
       else delete next[col];
       return next;
     });
+    setProgressVersion((v) => v + 1);
+  };
+
+  // Switching direction changes which beads a partial count refers to, so partly strung
+  // threads are cleared (after confirming); finished threads stay finished either way
+  const handleChangeStringingDirection = (direction) => {
+    if (direction === stringingDirection) return;
+    const height = finalMatrix?.length || rows;
+    const entries = Object.entries(beadProgress);
+    const hasPartial = entries.some(([, count]) => count > 0 && count < height);
+    if (
+      hasPartial &&
+      !window.confirm('Switching direction clears threads that are only partly strung. Finished threads are kept. Continue?')
+    ) {
+      return;
+    }
+    setStringingDirection(direction);
+    localStorage.setItem(STRINGING_DIRECTION_KEY, direction);
+    setBeadProgress(Object.fromEntries(entries.filter(([, count]) => count >= height)));
     setProgressVersion((v) => v + 1);
   };
 
@@ -397,6 +427,7 @@ export default function App() {
     lockAspectRatio,
     isExactMatrixMode,
     pixelScale,
+    stringingDirection,
     ditherMode,
     adjustments,
     enabledColorIds,
@@ -514,6 +545,8 @@ export default function App() {
     }
     setActiveCol(threading.activeCol ?? 0);
     setBeadProgress(progress);
+    // Projects saved before this setting existed were strung bottom-up
+    setStringingDirection(project.stringingDirection || 'bottom-up');
     setSaveStatus(null);
   };
 
@@ -573,7 +606,7 @@ export default function App() {
   // Export 2: Word Chart (.txt)
   const handleExportWordChart = () => {
     if (!finalMatrix) return;
-    const chart = generateWordChart(finalMatrix, activeBeadPreset);
+    const chart = generateWordChart(finalMatrix, activeBeadPreset, stringingDirection);
     const blob = new Blob([chart], { type: 'text/plain;charset=utf-8' });
     downloadBlob(blob, `bead-word-chart-${finalMatrix[0].length}x${finalMatrix.length}.txt`);
   };
@@ -584,11 +617,13 @@ export default function App() {
     const rows = finalMatrix.length;
     const columns = finalMatrix[0].length;
     const csvRows = [];
-    csvRows.push(['Row (from Bottom)', ...Array.from({ length: columns }, (_, i) => `Thread ${i + 1}`)]);
+    const startLabel = STRINGING_LABELS[stringingDirection].start;
+    csvRows.push([`Bead # (from ${startLabel})`, ...Array.from({ length: columns }, (_, i) => `Thread ${i + 1}`)]);
 
-    for (let y = rows - 1; y >= 0; y--) {
-      const rowNumFromBottom = rows - y;
-      const rowData = [rowNumFromBottom];
+    // Rows listed in stringing order: bead 1 first
+    for (let beadNumber = 1; beadNumber <= rows; beadNumber++) {
+      const y = rowForBead(beadNumber, rows, stringingDirection);
+      const rowData = [beadNumber];
       for (let x = 0; x < columns; x++) {
         rowData.push(finalMatrix[y][x].name);
       }
@@ -702,19 +737,22 @@ export default function App() {
             beadPreset={activeBeadPreset}
             activeCol={activeCol}
             beadProgress={beadProgress}
+            stringingDirection={stringingDirection}
             onSelectThread={handleChangeActiveCol}
             onSetThreadProgress={handleSetThreadProgress}
             isolatedColorId={isolatedColorId}
             renderMode={renderMode}
           />
 
-          {/* Bottom-to-Top Threading Assistant (Key User Requirement) */}
+          {/* Thread-by-thread stringing assistant */}
           <ThreadingGuide
             matrix={finalMatrix}
             activeCol={activeCol}
             onChangeActiveCol={handleChangeActiveCol}
             beadProgress={beadProgress}
             onSetThreadProgress={handleSetThreadProgress}
+            stringingDirection={stringingDirection}
+            onChangeStringingDirection={handleChangeStringingDirection}
             isSignedIn={Boolean(currentProfile)}
             saveStatus={saveStatus}
           />

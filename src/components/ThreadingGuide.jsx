@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, ChevronUp, Undo2, Check, Cloud, CloudOff } from 'lucide-react';
-import { getColumnRunLength } from '../core/threading.js';
+import { getColumnRunLength, rowForBead, STRINGING_LABELS } from '../core/threading.js';
 import confetti from 'canvas-confetti';
 
 export function ThreadingGuide({
   matrix,
   activeCol,
   onChangeActiveCol,
-  beadProgress, // { [col]: beads strung from the bottom }; a thread is done when it equals the height
+  beadProgress, // { [col]: beads strung so far, in stringing order }; a thread is done when it equals the height
   onSetThreadProgress, // (col, count) => void
+  stringingDirection, // 'top-down' | 'bottom-up'
+  onChangeStringingDirection,
   isSignedIn,
   saveStatus // null | 'saving' | 'saved' | 'error'
 }) {
@@ -16,8 +18,8 @@ export function ThreadingGuide({
   const width = matrix?.[0]?.length || 0;
 
   const currentGroups = useMemo(
-    () => (matrix ? getColumnRunLength(matrix, activeCol) : []),
-    [matrix, activeCol]
+    () => (matrix ? getColumnRunLength(matrix, activeCol, stringingDirection) : []),
+    [matrix, activeCol, stringingDirection]
   );
 
   const strungOf = (col) => Math.min(beadProgress[col] || 0, height);
@@ -35,8 +37,11 @@ export function ThreadingGuide({
 
   const strung = strungOf(activeCol);
   const isCurrentThreadDone = isThreadDone(activeCol);
-  const nextBeadNumber = strung + 1; // 1 = bottom bead
-  const nextBeadColor = !isCurrentThreadDone ? matrix?.[height - nextBeadNumber]?.[activeCol] : null;
+  const labels = STRINGING_LABELS[stringingDirection];
+  const nextBeadNumber = strung + 1; // 1 = first bead strung (top or bottom depending on direction)
+  const nextBeadColor = !isCurrentThreadDone
+    ? matrix?.[rowForBead(nextBeadNumber, height, stringingDirection)]?.[activeCol]
+    : null;
 
   // Next thread (to the right, wrapping around) that still has beads left to string
   const findNextUnfinished = () => {
@@ -160,6 +165,31 @@ export function ThreadingGuide({
         </div>
       </div>
 
+      {/* Which end of the thread fills first */}
+      <div className="direction-picker" role="radiogroup" aria-label="Stringing direction">
+        <span className="control-label" style={{ margin: 0 }}>Beads go on from the:</span>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={stringingDirection === 'top-down'}
+          className={`btn btn-sm ${stringingDirection === 'top-down' ? 'btn-primary' : ''}`}
+          onClick={() => onChangeStringingDirection('top-down')}
+          title="Thread tied to the dowel first; each bead is pushed up under the last one"
+        >
+          Top down (tied to dowel)
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={stringingDirection === 'bottom-up'}
+          className={`btn btn-sm ${stringingDirection === 'bottom-up' ? 'btn-primary' : ''}`}
+          onClick={() => onChangeStringingDirection('bottom-up')}
+          title="Knot or stopper bead at the bottom first; beads drop down onto it"
+        >
+          Bottom up (knot first)
+        </button>
+      </div>
+
       {/* Thread Navigation Header */}
       <div className="thread-nav">
         <button
@@ -178,7 +208,7 @@ export function ThreadingGuide({
           <span className="thread-direction">
             {isCurrentThreadDone
               ? `All ${height} beads strung`
-              : `${strung} of ${height} beads strung • bottom → top`}
+              : `${strung} of ${height} beads strung • ${labels.start} → ${labels.end}`}
           </span>
         </div>
 
@@ -197,7 +227,7 @@ export function ThreadingGuide({
         <div className="next-bead-callout">
           <span className="color-swatch-sm" style={{ backgroundColor: nextBeadColor.hex, width: '28px', height: '28px' }} />
           <div>
-            <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>Next: bead #{nextBeadNumber} from the bottom</div>
+            <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>Next: bead #{nextBeadNumber} from the {labels.start}</div>
             <div style={{ fontWeight: 600, color: '#F8FAFC' }}>{nextBeadColor.name}</div>
           </div>
         </div>
@@ -243,9 +273,9 @@ export function ThreadingGuide({
         </button>
       </div>
 
-      {/* Run-Length Group Cards (Ordered strictly Bottom to Top) */}
+      {/* Run-Length Group Cards, in stringing order */}
       <div className="control-label">
-        <span>Thread #{activeCol + 1} sequence (bottom to top), tap a group to mark it:</span>
+        <span>Thread #{activeCol + 1} sequence ({labels.start} to {labels.end}), tap a group to mark it:</span>
       </div>
 
       <div className="step-card-list">
@@ -269,7 +299,7 @@ export function ThreadingGuide({
                     <span className="step-count">{grp.count}×</span> {grp.color.name}
                   </div>
                   <div className="step-range">
-                    Beads {grp.startBead}–{grp.endBead} (from bottom)
+                    Beads {grp.startBead}–{grp.endBead} (from {labels.start})
                   </div>
                 </div>
               </div>

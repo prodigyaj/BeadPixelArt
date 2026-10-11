@@ -1,7 +1,8 @@
 // Simple beginner pixel-art designs, each using at most 6 pony bead colors.
-// Grids are drawn with square pixels; every character maps to a bead color id from
-// palettes/ponyBeads.js. Because 6×9mm pony beads are 1.5× wider than tall, rows are
+// Every character maps to a bead color id from palettes/ponyBeads.js. Most grids are drawn
+// with square pixels; because 6×9mm pony beads are 1.5× wider than tall, their rows are
 // stretched 1.5× when building the bead image so the finished hanging keeps its shape.
+// Designs marked beadSpace are drawn one row per bead row instead (finer vertical detail).
 import { PONY_BEAD_PALETTE } from '../palettes/ponyBeads.js';
 
 const PONY_ROW_STRETCH = 1.5;
@@ -216,6 +217,72 @@ const DESIGNS = [
     ]
   },
   {
+    id: 'halloween-skeleton',
+    name: 'Meditating Skeleton',
+    category: 'Halloween',
+    beadSpace: true, // drawn one row per bead row for extra detail (no 1.5× row stretch)
+    colors: { '.': 'PB-01', W: 'PB-02' },
+    grid: [
+      '....................................',
+      '....................................',
+      '....................................',
+      '................WWWW................',
+      '..............WWWWWWWW..............',
+      '.............WWWWWWWWWW.............',
+      '.............WWWWWWWWWW.............',
+      '............WWWWWWWWWWWW............',
+      '............WW..WWWW..WW............',
+      '............W....WW....W............',
+      '............W....WW....W............',
+      '............WW..WWWW..WW............',
+      '.............WWWW..WWWW.............',
+      '.............WWWW..WWWW.............',
+      '..............WWWWWWWW..............',
+      '..............W.WWWW.W..............',
+      '..............WW.WW.WW..............',
+      '...............WW..WW...............',
+      '................WWWW................',
+      '....................................',
+      '.................WW.................',
+      '...........WWWWWWWWWWWWWW...........',
+      '..........WW.....WW.....WW..........',
+      '..........W...WWWWWWWW...W..........',
+      '..........W...W..WW..W...W..........',
+      '.........W...WWWWWWWWWW...W.........',
+      '.........W...W...WW...W...W.........',
+      '.........W..WWWWWWWWWWWW..W.........',
+      '.........W..W....WW....W..W.........',
+      '........W...WWWWWWWWWWWW...W........',
+      '........W...W....WW....W...W........',
+      '.......WW....WWWWWWWWWW....WW.......',
+      '......WW.....W...WW...W.....WW......',
+      '......W.......WWWWWWWW.......W......',
+      '.....WW.........WWWW.........WW.....',
+      '.....W...........WW...........W.....',
+      '....WW..........WWWW..........WW....',
+      '.W.WW............WW............WW.W.',
+      '.W.W.........WWWWWWWWWW.........W.W.',
+      '.WWW........WW..WWWW..WW........WWW.',
+      'WWWWW.......WW..W..W..WW.......WWWWW',
+      'W..W.........WW.WWWW.WW.........W..W',
+      '.WW............WW..WW............WW.',
+      '..WWW.WWWWWWWW........WWWWWWWW.WWW..',
+      '.WWWWWWWWWWWW..........WWWWWWWWWWWW.',
+      '.WWWW..........................WWWW.',
+      '....WWWWW..................WWWWW....',
+      '........WWWWW..........WWWWW........',
+      '............WWWWW..WWWWW............',
+      '................WWWW................',
+      '............WWWWWWWWWWWW............',
+      '.........WWWWWW......WWWWWW.........',
+      '........WWWWWW........WWWWWW........',
+      '........W.W.W..........W.W.W........',
+      '....................................',
+      '....................................',
+      '....................................'
+    ]
+  },
+  {
     id: 'halloween-monster',
     name: 'Little Monster',
     category: 'Halloween',
@@ -239,7 +306,8 @@ const hexById = new Map(PONY_BEAD_PALETTE.map((c) => [c.id, c.hex]));
 
 // Builds an SVG with one rect per horizontal run of same-colored pixels.
 // hexFor maps a color id to a hex (lets suggestions preview a design in substitute colors).
-function gridToSvg(rows, colors, hexFor = (id) => hexById.get(id)) {
+// cellW/cellH set each pixel's aspect (3×2 previews bead-space grids at pony bead proportions).
+function gridToSvg(rows, colors, hexFor = (id) => hexById.get(id), cellW = 1, cellH = 1) {
   const width = rows[0].length;
   const height = rows.length;
   const rects = [];
@@ -249,37 +317,39 @@ function gridToSvg(rows, colors, hexFor = (id) => hexById.get(id)) {
       const ch = row[x];
       let end = x + 1;
       while (end < width && row[end] === ch) end++;
-      rects.push(`<rect x="${x}" y="${y}" width="${end - x}" height="1" fill="${hexFor(colors[ch])}"/>`);
+      rects.push(
+        `<rect x="${x * cellW}" y="${y * cellH}" width="${(end - x) * cellW}" height="${cellH}" fill="${hexFor(colors[ch])}"/>`
+      );
       x = end;
     }
   });
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" shape-rendering="crispEdges">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width * cellW} ${height * cellH}" width="${width * cellW}" height="${height * cellH}" shape-rendering="crispEdges">` +
     rects.join('') +
     `</svg>`
   );
 }
 
 // Square-pixel preview of a design, optionally recolored: hexFor(colorId) => hex
-export const renderDesignThumb = (design, hexFor) => toDataUri(gridToSvg(design.grid, design.colors, hexFor));
+export const renderDesignThumb = (design, hexFor) =>
+  toDataUri(gridToSvg(design.grid, design.colors, hexFor, ...(design.beadSpace ? [3, 2] : [])));
 
 const toDataUri = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-export const PIXEL_ART_SAMPLES = DESIGNS.map(({ id, name, category = 'Everyday', colors, grid }) => {
-  const stretchedRows = Array.from(
-    { length: Math.round(grid.length * PONY_ROW_STRETCH) },
-    (_, r) => grid[Math.floor(r / PONY_ROW_STRETCH)]
-  );
+export const PIXEL_ART_SAMPLES = DESIGNS.map(({ id, name, category = 'Everyday', beadSpace = false, colors, grid }) => {
+  const stretchedRows = beadSpace
+    ? grid
+    : Array.from({ length: Math.round(grid.length * PONY_ROW_STRETCH) }, (_, r) => grid[Math.floor(r / PONY_ROW_STRETCH)]);
   const colorCount = new Set(grid.join('')).size;
   return {
     id,
     name,
     description: `${grid[0].length} × ${stretchedRows.length} beads • ${colorCount} colors`,
     src: toDataUri(gridToSvg(stretchedRows, colors)),
-    thumbSrc: toDataUri(gridToSvg(grid, colors)), // square-pixel preview for the gallery
+    thumbSrc: renderDesignThumb({ grid, colors, beadSpace }), // true-proportion preview for the gallery
     isExactMatrix: true,
     isSimple: true,
     category,
-    design: { grid, colors } // source grid + color ids, used for inventory suggestions
+    design: { grid, colors, beadSpace } // source grid + color ids, used for inventory suggestions
   };
 });

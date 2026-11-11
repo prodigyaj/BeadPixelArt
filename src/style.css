@@ -198,9 +198,25 @@ body {
   width: 100%;
 }
 
+/* Folded setup column: just a narrow strip holding the show-panel button */
+.main-workspace.setup-collapsed {
+  grid-template-columns: 40px 1fr 340px;
+}
+
+.setup-collapse-toggle {
+  align-self: flex-start;
+}
+
+.setup-collapsed .setup-collapse-toggle {
+  padding: 0.5rem;
+}
+
 @media (max-width: 1400px) {
   .main-workspace {
     grid-template-columns: 360px 1fr;
+  }
+  .main-workspace.setup-collapsed {
+    grid-template-columns: 40px 1fr;
   }
   .right-sidebar {
     grid-column: 1 / -1;
@@ -208,7 +224,8 @@ body {
 }
 
 @media (max-width: 992px) {
-  .main-workspace {
+  .main-workspace,
+  .main-workspace.setup-collapsed {
     grid-template-columns: 1fr;
   }
 }

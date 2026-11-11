@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Header } from './components/Header.jsx';
 import { ImageUpload } from './components/ImageUpload.jsx';
 import { WallCalculator } from './components/WallCalculator.jsx';
@@ -42,6 +43,7 @@ const DEFAULT_COLUMNS = 40;
 
 const ADVANCED_MODE_KEY = 'beadpixel.advancedMode';
 const STRINGING_DIRECTION_KEY = 'beadpixel.stringingDirection';
+const SETUP_COLLAPSED_KEY = 'beadpixel.setupCollapsed';
 
 const paletteForPreset = (preset) => (preset.id.startsWith('perler') ? PERLER_PALETTE : PONY_BEAD_PALETTE);
 
@@ -67,6 +69,15 @@ export default function App() {
   const handleToggleAdvancedMode = () => {
     setIsAdvancedMode((prev) => {
       localStorage.setItem(ADVANCED_MODE_KEY, String(!prev));
+      return !prev;
+    });
+  };
+
+  // Left setup column can be folded away to give the pattern the full width
+  const [isSetupCollapsed, setIsSetupCollapsed] = useState(() => localStorage.getItem(SETUP_COLLAPSED_KEY) === 'true');
+  const handleToggleSetupCollapsed = () => {
+    setIsSetupCollapsed((prev) => {
+      localStorage.setItem(SETUP_COLLAPSED_KEY, String(!prev));
       return !prev;
     });
   };
@@ -670,10 +681,20 @@ export default function App() {
         totalColorsCount={basePalette.length}
       />
 
-      <main className="main-workspace">
+      <main className={`main-workspace${isSetupCollapsed ? ' setup-collapsed' : ''}`}>
         {/* Left Sidebar: Controls & Sizing */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {isAdvancedMode ? (
+          <button
+            type="button"
+            className="btn btn-sm setup-collapse-toggle"
+            onClick={handleToggleSetupCollapsed}
+            title={isSetupCollapsed ? 'Show the design panel' : 'Hide the design panel'}
+            aria-expanded={!isSetupCollapsed}
+          >
+            {isSetupCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            {!isSetupCollapsed && <span>Hide panel</span>}
+          </button>
+          {isSetupCollapsed ? null : isAdvancedMode ? (
             <>
               <ImageUpload
                 activeSampleId={activeSampleId}

@@ -154,9 +154,22 @@ export function PatternCanvas({
     setOffset({ x: 0, y: 0 });
   }, [width, height, beadPreset]);
 
+  // Viewport size; changes when the window resizes or the setup panel folds away
+  const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width: w, height: h } = entry.contentRect;
+      setViewportSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     fitToScreen();
-  }, [width, height, fitToScreen]);
+  }, [width, height, fitToScreen, viewportSize]);
 
   // Main canvas drawing
   useEffect(() => {
@@ -334,7 +347,7 @@ export function PatternCanvas({
     }
 
     ctx.restore();
-  }, [matrix, width, height, beadPreset, zoom, offset, activeCol, beadProgress, stringingDirection, isolatedColorId, renderMode]);
+  }, [matrix, width, height, beadPreset, zoom, offset, activeCol, beadProgress, stringingDirection, isolatedColorId, renderMode, viewportSize]);
 
   // Zoom stays between "whole pattern fits" and MAX_ZOOM_FACTOR × closer; back at the fit level
   // the pattern re-centers so it can't be left stranded off to one side

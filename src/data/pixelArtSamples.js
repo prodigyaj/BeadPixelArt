@@ -1,4 +1,4 @@
-// Simple beginner pixel-art designs, each using at most 6 pony bead colors.
+// Simple beginner pixel-art designs, most using at most 6 pony bead colors.
 // Every character maps to a bead color id from palettes/ponyBeads.js. Most grids are drawn
 // with square pixels; because 6×9mm pony beads are 1.5× wider than tall, their rows are
 // stretched 1.5× when building the bead image so the finished hanging keeps its shape.
@@ -8,6 +8,67 @@ import { PONY_BEAD_PALETTE } from '../palettes/ponyBeads.js';
 const PONY_ROW_STRETCH = 1.5;
 
 const DESIGNS = [
+  {
+    // Listed first so it loads by default on startup. Traced cell-for-cell from a 40×48 chart.
+    id: 'christmas-doghouse',
+    name: 'Christmas Doghouse',
+    category: 'Christmas',
+    beadSpace: true, // one row per bead row: keeps the source chart's exact 40×48 dimensions
+    colors: {
+      '.': 'PB-27', W: 'PB-02', K: 'PB-01', R: 'PB-10', D: 'PB-11',
+      B: 'PB-30', O: 'PB-16', P: 'PB-34', G: 'PB-21', Y: 'PB-19'
+    },
+    grid: [
+      '........................................',
+      '........................................',
+      '........................................',
+      '........................................',
+      '.............KK.........................',
+      '............KKKK........................',
+      '...........KWWWK........................',
+      '...........KWWWWK.......................',
+      '...........KWWWWK..........KK...........',
+      '...........KWWWWK.........KKWK..........',
+      '...........KWWWWWK..KKKK..KWWK..........',
+      '..........KWWWWWWK.KWWWWK.KWKK..........',
+      '..........KWKKWWWKKWWWWWWKKWWK..........',
+      '..........KWWWWWWKWWKKKWWKKWWK..........',
+      '..........KWWWWWWKWWWWWKWWWWWK..........',
+      '..........KKKKKKKKKKKKKKKKKKKK..........',
+      '.........DDDKKDDKDDDDDDKDDDDDDD.........',
+      '........DRRKKKRRRKRRRRKRRRRRRRRD........',
+      '........DRRKKKRRRRKRRRKRRRRRRRRD........',
+      '........DRRKKKRRRKKRRKOKRRRRRRRD........',
+      '.......DRRRKKKRRKPPKRKOOKRRRRRRRD.......',
+      '.......KRDDKKDRKPPKKRKKOKRDDRDDDD.......',
+      '......DKKRRRRRRRKKRRKRRKRRRRRRRRRD......',
+      '......KOOKRRRRRRRRRKRKRRRRRRRRRRRD......',
+      '.....KOOKRKKRRRRRRRKRRKRRRRRRRRRRKK.....',
+      '.....DKKRRKGKKRRRKKRRKYKRRRRRRRKKPPK....',
+      '.....DRRRKGGKRKKKRRRKYYKKKRRRKKRRKPK....',
+      '.....DRRRKGKRRRKBKRRKYKRRRKKKBBKRRK.....',
+      '.....DDRDDKDRDRKBBKDDKRDDKGKRKBBKRD.....',
+      '....DRRRRRRRRRRRKBKRRRRRKGGKRRKKRRRD....',
+      '....DRRRRRRRRRRRRKRRRRRRKGKRRRRRRRRD....',
+      '....DRRRRRRRRRRRRRRRRRRRRKRRRRRRRRRD....',
+      '....DRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRD....',
+      '....DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD....',
+      '........KDRRRRRKRRRRRRRKRRRRRRDK........',
+      '........KDRRRRKRKRRRRRKRKRRRRRK.........',
+      '.......KYKRRKKRRKRRRRKRRRKKRRKOK........',
+      '......KYYKKKGKRDDKDRKRDDDKPKKKOOK.......',
+      '.......KKDRKGGKRRRKKBKRRKPPKRRKOK.......',
+      '.........DRRKGKRRRKBBKRRKPKRRRDK........',
+      '.........DRRRKRRRRKBKRRRRKRRRRD.........',
+      'KK.......DRRRRRRRRRKRRRRRRRRRRD....KKKK.',
+      'WWKK.....DRRRRRRRRRRRRKKKRRRRRD..KKWWWWK',
+      'WWWWKKKKKDDDDKKKKDDDKKWWWKKKDDDKKWWWWWWW',
+      'WWWWWWWWWKKKKWWWWKKKWWWWWWWWKKKWWWWWWWWW',
+      'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+      'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+      'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
+    ]
+  },
   {
     id: 'simple-heart',
     name: 'Red Heart',

@@ -12,7 +12,7 @@ const SIZE_OPTIONS = [
   { label: 'Extra Large', columns: 90, pixelScale: 5 }
 ];
 
-const CATEGORY_LABELS = { Everyday: 'Everyday', Halloween: '🎃 Halloween Specials' };
+const CATEGORY_LABELS = { Everyday: 'Everyday', Halloween: '🎃 Halloween Specials', Christmas: '🎄 Christmas Specials' };
 
 // Beginner-friendly left column: pick a design, pick a size, see the finished size
 export function SimpleSetup({
